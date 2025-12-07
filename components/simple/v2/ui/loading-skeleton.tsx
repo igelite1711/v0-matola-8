@@ -1,0 +1,183 @@
+"use client"
+
+import { cn } from "@/lib/utils"
+
+// Base skeleton shimmer component
+export function Skeleton({ className }: { className?: string }) {
+  return <div className={cn("animate-pulse rounded-md bg-muted", className)} />
+}
+
+// Card skeleton for shipments/loads
+export function CardSkeleton() {
+  return (
+    <div className="rounded-2xl bg-card border border-border p-4">
+      {/* Header badges */}
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex gap-2">
+          <Skeleton className="h-6 w-16 rounded-full" />
+          <Skeleton className="h-6 w-14 rounded-full" />
+        </div>
+        <Skeleton className="h-6 w-14 rounded-full" />
+      </div>
+
+      {/* Route */}
+      <div className="flex items-center gap-2 mb-3">
+        <Skeleton className="h-8 w-8 rounded-full" />
+        <Skeleton className="h-5 w-20" />
+        <div className="flex-1 border-t-2 border-dashed border-border mx-2" />
+        <Skeleton className="h-5 w-20" />
+      </div>
+
+      {/* Details */}
+      <div className="flex items-center gap-3 mb-4">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-4 w-16" />
+        <Skeleton className="h-4 w-14" />
+      </div>
+
+      {/* Shipper info */}
+      <div className="flex items-center gap-3 p-3 rounded-xl bg-secondary/50 mb-4">
+        <Skeleton className="h-10 w-10 rounded-full" />
+        <div className="flex-1 space-y-2">
+          <Skeleton className="h-4 w-28" />
+          <Skeleton className="h-3 w-20" />
+        </div>
+        <div className="text-right space-y-2">
+          <Skeleton className="h-5 w-20" />
+          <Skeleton className="h-3 w-14" />
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex gap-3">
+        <Skeleton className="flex-1 h-12 rounded-xl" />
+        <Skeleton className="flex-1 h-12 rounded-xl" />
+      </div>
+    </div>
+  )
+}
+
+// Stats card skeleton
+export function StatsCardSkeleton() {
+  return (
+    <div className="rounded-2xl bg-card border border-border p-4 text-center">
+      <Skeleton className="h-5 w-5 mx-auto mb-2 rounded" />
+      <Skeleton className="h-6 w-12 mx-auto mb-1" />
+      <Skeleton className="h-3 w-10 mx-auto" />
+    </div>
+  )
+}
+
+// Dashboard header skeleton
+export function DashboardHeaderSkeleton() {
+  return (
+    <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border">
+      <div className="mx-auto max-w-2xl px-4 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-14 w-14 rounded-2xl" />
+            <div className="space-y-2">
+              <Skeleton className="h-5 w-32" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </div>
+          <Skeleton className="h-10 w-20 rounded-full" />
+        </div>
+      </div>
+    </header>
+  )
+}
+
+// Leaderboard entry skeleton
+export function LeaderboardSkeleton() {
+  return (
+    <div className="space-y-3">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="rounded-2xl bg-card border border-border p-4">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-4 w-28" />
+              <Skeleton className="h-3 w-20" />
+            </div>
+            <div className="text-right space-y-2">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-3 w-8" />
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Achievement grid skeleton
+export function AchievementsSkeleton() {
+  return (
+    <div className="grid grid-cols-2 gap-4">
+      {[1, 2, 3, 4, 5, 6].map((i) => (
+        <div key={i} className="rounded-2xl bg-card border border-border p-4">
+          <Skeleton className="h-14 w-14 rounded-xl mx-auto mb-3" />
+          <div className="text-center space-y-2">
+            <Skeleton className="h-4 w-20 mx-auto" />
+            <Skeleton className="h-3 w-12 mx-auto" />
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+// Profile skeleton
+export function ProfileSkeleton() {
+  return (
+    <div className="space-y-6 p-4">
+      <div className="flex flex-col items-center">
+        <Skeleton className="h-24 w-24 rounded-full mb-4" />
+        <Skeleton className="h-6 w-32 mb-2" />
+        <Skeleton className="h-4 w-20" />
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        {[1, 2, 3].map((i) => (
+          <div key={i} className="rounded-2xl bg-card border border-border p-3 text-center">
+            <Skeleton className="h-5 w-8 mx-auto mb-2" />
+            <Skeleton className="h-3 w-12 mx-auto" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// Full page loading skeleton
+export function FullPageSkeleton({ type = "default" }: { type?: "shipper" | "transporter" | "default" }) {
+  return (
+    <div className="min-h-screen bg-background pb-24">
+      <DashboardHeaderSkeleton />
+      <div className="mx-auto max-w-2xl px-4 py-6">
+        {/* Stats */}
+        <div className="mb-6 grid grid-cols-3 gap-3">
+          <StatsCardSkeleton />
+          <StatsCardSkeleton />
+          <StatsCardSkeleton />
+        </div>
+
+        {/* Section header */}
+        <div className="flex items-center justify-between mb-4">
+          <div className="space-y-2">
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+          <Skeleton className="h-8 w-20 rounded-lg" />
+        </div>
+
+        {/* Cards */}
+        <div className="space-y-4">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      </div>
+    </div>
+  )
+}
