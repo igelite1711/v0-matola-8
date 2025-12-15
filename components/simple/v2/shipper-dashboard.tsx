@@ -1,5 +1,8 @@
 "use client"
 import { useState, useEffect } from "react"
+import type React from "react"
+
+import Link from "next/link"
 import {
   Clock,
   CheckCircle2,
@@ -13,11 +16,13 @@ import {
   Phone,
   Zap,
   CloudRain,
+  Home,
+  Package,
+  User,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n/use-language"
-import { voiceService, speak } from "@/lib/voice/voice-commands"
 import { getSeasonalData } from "@/lib/seasonal/seasonal-intelligence"
 import { getTrustLevel } from "@/lib/trust/trust-system"
 import { formatMWK } from "@/lib/payments/mobile-money"
@@ -26,7 +31,7 @@ import { ErrorState } from "./ui/error-state"
 import { EmptyState } from "./ui/empty-state"
 import { PullToRefresh } from "./ui/pull-to-refresh"
 import { NetworkStatus } from "./ui/network-status"
-import { BottomNav } from "./bottom-nav"
+import { QuickPostModal } from "./quick-post-modal"
 
 const MOCK_SHIPMENTS = [
   {
@@ -76,8 +81,6 @@ export function ShipperDashboardV2() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [shipments, setShipments] = useState<typeof MOCK_SHIPMENTS>([])
-  const [filter, setFilter] = useState<"all" | "active" | "completed">("all")
-  const [isListening, setIsListening] = useState(false)
   const [showQuickPost, setShowQuickPost] = useState(false)
   const seasonalData = getSeasonalData()
 
@@ -101,38 +104,6 @@ export function ShipperDashboardV2() {
     await new Promise((resolve) => setTimeout(resolve, 1000))
     setShipments(MOCK_SHIPMENTS)
   }
-
-  const handleVoiceCommand = () => {
-    if (!voiceService.isSupported()) {
-      return
-    }
-
-    if (isListening) {
-      voiceService.stopListening()
-      setIsListening(false)
-    } else {
-      setIsListening(true)
-      speak(language === "ny" ? "Ndikumvera. Nenani komwe mukupita." : "Listening. Say your destination.", language)
-
-      voiceService.startListening(
-        (result) => {
-          setIsListening(false)
-          if (result.type === "destination") {
-            setShowQuickPost(true)
-          }
-        },
-        () => {
-          setIsListening(false)
-        },
-      )
-    }
-  }
-
-  const filteredShipments = shipments.filter((s) => {
-    if (filter === "active") return s.status !== "completed"
-    if (filter === "completed") return s.status === "completed"
-    return true
-  })
 
   const stats = [
     {
@@ -263,10 +234,10 @@ export function ShipperDashboardV2() {
             </div>
 
             {shipments.length === 0 ? (
-              <EmptyState type="shipments" onAction={() => console.log("Post load clicked")} />
+              <EmptyState type="shipments" onAction={() => setShowQuickPost(true)} />
             ) : (
               <div className="space-y-4">
-                {filteredShipments.map((shipment) => (
+                {shipments.map((shipment) => (
                   <ShipmentCard key={shipment.id} shipment={shipment} language={language} />
                 ))}
               </div>
@@ -275,9 +246,44 @@ export function ShipperDashboardV2() {
         </div>
 
         {/* Bottom Navigation */}
-        <BottomNav language={language} />
+        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border px-4 py-2 pb-safe">
+          <div className="mx-auto max-w-md flex items-center justify-around">
+            <NavItem icon={Home} label={language === "ny" ? "Kwathu" : "Home"} href="/simple/v2/shipper" active />
+            <NavItem icon={Package} label={language === "ny" ? "Katundu" : "Shipments"} href="/simple/v2/shipper" />
+            <button
+              onClick={() => setShowQuickPost(true)}
+              className="flex h-14 w-14 -mt-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+            >
+              <Plus className="h-7 w-7" />
+            </button>
+            <NavItem icon={MapPin} label={language === "ny" ? "Tsatira" : "Track"} href="/simple/v2/shipper" />
+            <NavItem icon={User} label={language === "ny" ? "Ine" : "Profile"} href="/simple/v2/profile" />
+          </div>
+        </nav>
       </PullToRefresh>
+
+      {/* Quick Post Modal */}
+      <QuickPostModal isOpen={showQuickPost} onClose={() => setShowQuickPost(false)} />
     </>
+  )
+}
+
+function NavItem({
+  icon: Icon,
+  label,
+  href,
+  active = false,
+}: {
+  icon: React.ElementType
+  label: string
+  href: string
+  active?: boolean
+}) {
+  return (
+    <Link href={href} className="flex flex-col items-center gap-1 px-3 py-2">
+      <Icon className={cn("h-6 w-6", active ? "text-primary" : "text-muted-foreground")} />
+      <span className={cn("text-xs", active ? "text-primary font-medium" : "text-muted-foreground")}>{label}</span>
+    </Link>
   )
 }
 
@@ -313,111 +319,120 @@ function ShipmentCard({
   const StatusIcon = status.icon
 
   return (
-    <div className="rounded-2xl bg-card border border-border p-4 transition-all hover:border-primary/30">
-      {/* Route Header */}
-      <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2">
-          <MapPin className="h-4 w-4 text-primary" />
-          <span className="font-semibold text-foreground">{shipment.origin}</span>
-          <ArrowRight className="h-4 w-4 text-muted-foreground" />
-          <span className="font-semibold text-foreground">{shipment.destination}</span>
-        </div>
-        <span className="text-sm font-medium text-primary">{formatMWK(shipment.price)}</span>
-      </div>
-
-      {/* Details */}
-      <div className="flex items-center gap-3 text-sm text-muted-foreground mb-3">
-        <span>{shipment.cargo}</span>
-        <span className="w-1 h-1 rounded-full bg-muted-foreground" />
-        <span>{shipment.weight.toLocaleString()} kg</span>
-      </div>
-
-      {/* Progress bar for in_transit */}
-      {shipment.status === "in_transit" && shipment.progress && (
-        <div className="mb-3">
-          <div className="h-2 rounded-full bg-secondary overflow-hidden">
-            <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${shipment.progress}%` }} />
+    <Link href={shipment.status === "in_transit" ? `/simple/v2/track/${shipment.id}` : "#"}>
+      <div className="rounded-2xl bg-card border border-border p-4 transition-all hover:border-primary/30">
+        {/* Route Header */}
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <MapPin className="h-4 w-4 text-primary" />
+            <span className="font-semibold text-foreground">{shipment.origin}</span>
+            <ArrowRight className="h-4 w-4 text-muted-foreground" />
+            <span className="font-semibold text-foreground">{shipment.destination}</span>
           </div>
-          <div className="flex justify-between mt-1">
-            <span className="text-xs text-muted-foreground">{shipment.progress}% complete</span>
-            <span className="text-xs text-muted-foreground">ETA: {shipment.eta}</span>
-          </div>
+          <span className="text-sm font-medium text-primary">{formatMWK(shipment.price)}</span>
         </div>
-      )}
 
-      {/* Transporter info for in_transit */}
-      {shipment.status === "in_transit" && shipment.transporter && (
-        <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 mb-3">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
-              <span className="text-sm font-bold text-primary">
-                {shipment.transporter.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </span>
+        {/* Details */}
+        <div className="flex items-center gap-3 text-sm text-muted-foreground mb-3">
+          <span>{shipment.cargo}</span>
+          <span className="w-1 h-1 rounded-full bg-muted-foreground" />
+          <span>{shipment.weight.toLocaleString()} kg</span>
+        </div>
+
+        {/* Progress bar for in_transit */}
+        {shipment.status === "in_transit" && shipment.progress && (
+          <div className="mb-3">
+            <div className="h-2 rounded-full bg-secondary overflow-hidden">
+              <div
+                className="h-full bg-primary rounded-full transition-all"
+                style={{ width: `${shipment.progress}%` }}
+              />
             </div>
-            <div>
-              <p className="font-medium text-foreground text-sm">{shipment.transporter.name}</p>
-              <div className="flex items-center gap-2">
-                <Star className="h-3 w-3 fill-warning text-warning" />
-                <span className="text-xs text-muted-foreground">{shipment.transporter.rating}</span>
-                <span className="text-xs text-success">{getTrustLevel(shipment.transporter.trustScore).label}</span>
+            <div className="flex justify-between mt-1">
+              <span className="text-xs text-muted-foreground">{shipment.progress}% complete</span>
+              <span className="text-xs text-muted-foreground">ETA: {shipment.eta}</span>
+            </div>
+          </div>
+        )}
+
+        {/* Transporter info for in_transit */}
+        {shipment.status === "in_transit" && shipment.transporter && (
+          <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 mb-3">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+                <span className="text-sm font-bold text-primary">
+                  {shipment.transporter.name
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")}
+                </span>
+              </div>
+              <div>
+                <p className="font-medium text-foreground text-sm">{shipment.transporter.name}</p>
+                <div className="flex items-center gap-2">
+                  <Star className="h-3 w-3 fill-warning text-warning" />
+                  <span className="text-xs text-muted-foreground">{shipment.transporter.rating}</span>
+                  <span className="text-xs text-success">{getTrustLevel(shipment.transporter.trustScore).label}</span>
+                </div>
               </div>
             </div>
-          </div>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-9 w-9 p-0 rounded-full border-primary text-primary bg-transparent"
-          >
-            <Phone className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
-
-      {/* Matches for pending */}
-      {shipment.status === "pending" && shipment.matches && shipment.bestMatch && (
-        <div className="p-3 rounded-xl bg-success/5 border border-success/20 mb-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-success font-medium">
-                {shipment.matches} {language === "ny" ? "apezeka" : "matches found"}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {language === "ny" ? "Wabwino kwambiri" : "Best match"}: {shipment.bestMatch.name} -{" "}
-                {formatMWK(shipment.bestMatch.price)}
-              </p>
-            </div>
-            <Button size="sm" className="bg-success text-white hover:bg-success/90">
-              {language === "ny" ? "Onani" : "View"}
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-9 w-9 p-0 rounded-full border-primary text-primary bg-transparent"
+              onClick={(e) => {
+                e.preventDefault()
+                window.location.href = `tel:${shipment.transporter?.phone}`
+              }}
+            >
+              <Phone className="h-4 w-4" />
             </Button>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* Savings for completed */}
-      {shipment.status === "completed" && shipment.saved && (
-        <div className="flex items-center gap-2 p-2 rounded-lg bg-success/10 mb-3">
-          <Zap className="h-4 w-4 text-success" />
-          <span className="text-sm text-success font-medium">
-            {language === "ny" ? "Mwasungira" : "You saved"} {formatMWK(shipment.saved)}
-          </span>
-        </div>
-      )}
+        {/* Matches for pending */}
+        {shipment.status === "pending" && shipment.matches && shipment.bestMatch && (
+          <div className="p-3 rounded-xl bg-success/5 border border-success/20 mb-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-success font-medium">
+                  {shipment.matches} {language === "ny" ? "apezeka" : "matches found"}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {language === "ny" ? "Wabwino kwambiri" : "Best match"}: {shipment.bestMatch.name} -{" "}
+                  {formatMWK(shipment.bestMatch.price)}
+                </p>
+              </div>
+              <Button size="sm" className="bg-success text-white hover:bg-success/90">
+                {language === "ny" ? "Onani" : "View"}
+              </Button>
+            </div>
+          </div>
+        )}
 
-      {/* Status Footer */}
-      <div className="flex items-center justify-between">
-        <div className={cn("flex items-center gap-2 rounded-full px-3 py-1.5", status.bg)}>
-          <StatusIcon className={cn("h-4 w-4", status.color)} />
-          <span className={cn("text-sm font-medium", status.color)}>{status.label}</span>
-        </div>
+        {/* Savings for completed */}
+        {shipment.status === "completed" && shipment.saved && (
+          <div className="flex items-center gap-2 p-2 rounded-lg bg-success/10 mb-3">
+            <Zap className="h-4 w-4 text-success" />
+            <span className="text-sm text-success font-medium">
+              {language === "ny" ? "Mwasungira" : "You saved"} {formatMWK(shipment.saved)}
+            </span>
+          </div>
+        )}
 
-        <Button variant="ghost" size="sm" className="text-muted-foreground">
-          {language === "ny" ? "Zambiri" : "Details"}
-          <ChevronRight className="ml-1 h-4 w-4" />
-        </Button>
+        {/* Status Footer */}
+        <div className="flex items-center justify-between">
+          <div className={cn("flex items-center gap-2 rounded-full px-3 py-1.5", status.bg)}>
+            <StatusIcon className={cn("h-4 w-4", status.color)} />
+            <span className={cn("text-sm font-medium", status.color)}>{status.label}</span>
+          </div>
+
+          <Button variant="ghost" size="sm" className="text-muted-foreground">
+            {language === "ny" ? "Zambiri" : "Details"}
+            <ChevronRight className="ml-1 h-4 w-4" />
+          </Button>
+        </div>
       </div>
-    </div>
+    </Link>
   )
 }

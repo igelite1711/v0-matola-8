@@ -10,7 +10,6 @@ import {
   Star,
   MapPin,
   Zap,
-  Users,
   Globe,
   Mic,
   Wifi,
@@ -78,7 +77,7 @@ export function LandingPageV2() {
             </button>
 
             <Button variant="ghost" size="sm" className="text-muted-foreground" asChild>
-              <Link href="/simple/login">{t("login")}</Link>
+              <Link href="/simple/v2/login">{language === "ny" ? "Lowani" : "Login"}</Link>
             </Button>
           </div>
         </div>
@@ -146,7 +145,7 @@ export function LandingPageV2() {
               className="h-16 w-full gap-3 bg-primary px-8 text-lg font-semibold text-primary-foreground hover:bg-primary/90 sm:w-auto min-w-[200px] rounded-2xl shadow-lg shadow-primary/25"
               asChild
             >
-              <Link href="/simple/register">
+              <Link href="/simple/v2/register">
                 {language === "ny" ? "Yambani Kwaulere" : "Get Started Free"}
                 <ArrowRight className="h-5 w-5" />
               </Link>
@@ -157,7 +156,7 @@ export function LandingPageV2() {
               className="h-16 w-full px-8 text-lg font-semibold border-2 border-border sm:w-auto min-w-[200px] rounded-2xl bg-transparent"
               asChild
             >
-              <Link href="/simple/login">{language === "ny" ? "Ndili ndi akaunti" : "I have an account"}</Link>
+              <Link href="/simple/v2/login">{language === "ny" ? "Ndili ndi akaunti" : "I have an account"}</Link>
             </Button>
           </div>
 
@@ -205,7 +204,7 @@ export function LandingPageV2() {
         </div>
       </section>
 
-      {/* Stats Section - Animated */}
+      {/* Stats Section */}
       <section className="border-y border-border bg-card/50 px-4 py-12">
         <div className="mx-auto grid max-w-4xl grid-cols-3 gap-8">
           {[
@@ -221,7 +220,7 @@ export function LandingPageV2() {
         </div>
       </section>
 
-      {/* How it works - Simplified */}
+      {/* How it works */}
       <section className="px-4 py-16 md:py-20">
         <div className="mx-auto max-w-5xl">
           <div className="mb-12 text-center">
@@ -267,7 +266,7 @@ export function LandingPageV2() {
                 className="w-full h-12 bg-primary text-primary-foreground rounded-xl text-base font-medium"
                 asChild
               >
-                <Link href="/simple/register?type=shipper">
+                <Link href="/simple/v2/register?type=shipper">
                   {language === "ny" ? "Tumizani Katundu" : "Post a Load"}
                   <ChevronRight className="ml-1 h-4 w-4" />
                 </Link>
@@ -304,7 +303,7 @@ export function LandingPageV2() {
                 className="w-full h-12 bg-primary text-primary-foreground rounded-xl text-base font-medium"
                 asChild
               >
-                <Link href="/simple/register?type=transporter">
+                <Link href="/simple/v2/register?type=transporter">
                   {language === "ny" ? "Pezani Katundu" : "Find Loads"}
                   <ChevronRight className="ml-1 h-4 w-4" />
                 </Link>
@@ -314,7 +313,7 @@ export function LandingPageV2() {
         </div>
       </section>
 
-      {/* Features - African-focused */}
+      {/* Features */}
       <section className="bg-card/50 px-4 py-16 md:py-20">
         <div className="mx-auto max-w-5xl">
           <div className="mb-12 text-center">
@@ -399,7 +398,6 @@ export function LandingPageV2() {
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
-              {/* USSD */}
               <div className="bg-card rounded-2xl p-6 text-center">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
                   <Phone className="h-8 w-8 text-primary" />
@@ -411,7 +409,6 @@ export function LandingPageV2() {
                 </p>
               </div>
 
-              {/* WhatsApp */}
               <div className="bg-card rounded-2xl p-6 text-center">
                 <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-success/10 mb-4">
                   <MessageCircle className="h-8 w-8 text-success" />
@@ -430,27 +427,21 @@ export function LandingPageV2() {
       {/* Final CTA */}
       <section className="px-4 py-16 md:py-20 bg-gradient-to-b from-transparent to-card/50">
         <div className="mx-auto max-w-2xl text-center">
-          <div className="mb-6 inline-flex items-center justify-center gap-2 rounded-full bg-primary/10 px-4 py-2">
-            <Users className="h-4 w-4 text-primary" />
-            <span className="text-sm font-medium text-primary">
-              {language === "ny" ? "Lowani ndi anthu 5,000+" : "Join 5,000+ users"}
-            </span>
-          </div>
-          <h2 className="mb-4 text-3xl md:text-4xl font-bold text-foreground">
-            {language === "ny" ? "Muli okonzeka?" : "Ready to move?"}
+          <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+            {language === "ny" ? "Muli okonzeka?" : "Ready to get started?"}
           </h2>
-          <p className="mb-8 text-lg text-muted-foreground">
+          <p className="text-muted-foreground mb-8">
             {language === "ny"
-              ? "Yambani lero. Palibe malipiro obisika."
-              : "Start shipping smarter today. No subscription, no hidden fees."}
+              ? "Lowani lero ndipo yambani kusungira ndalama pa kayendetsedwe ka katundu"
+              : "Join today and start saving on your cargo transport"}
           </p>
           <Button
             size="lg"
             className="h-16 gap-3 bg-primary px-10 text-lg font-semibold text-primary-foreground hover:bg-primary/90 rounded-2xl shadow-lg shadow-primary/25"
             asChild
           >
-            <Link href="/simple/register">
-              {language === "ny" ? "Pangani Akaunti Yaulere" : "Create Free Account"}
+            <Link href="/simple/v2/register">
+              {language === "ny" ? "Yambani Kwaulere" : "Get Started Free"}
               <ArrowRight className="h-5 w-5" />
             </Link>
           </Button>
@@ -458,29 +449,29 @@ export function LandingPageV2() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t border-border px-4 py-8 bg-card/30">
-        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-6 md:flex-row">
-          <div className="flex items-center gap-2">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary">
-              <Truck className="h-4 w-4 text-primary-foreground" />
+      <footer className="border-t border-border bg-card px-4 py-8">
+        <div className="mx-auto max-w-5xl">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
+                <Truck className="h-4 w-4 text-primary-foreground" />
+              </div>
+              <span className="font-bold text-foreground">Matola</span>
             </div>
-            <span className="font-semibold text-foreground">Matola</span>
-          </div>
-
-          <p className="text-sm text-muted-foreground">
-            &copy; 2025 Matola. {language === "ny" ? "Popangidwa ku Malawi." : "Made in Malawi."}
-          </p>
-
-          <div className="flex gap-6">
-            <Link href="/about" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              {language === "ny" ? "Za Ife" : "About"}
-            </Link>
-            <Link href="/help" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              {language === "ny" ? "Thandizo" : "Help"}
-            </Link>
-            <Link href="/terms" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
-              {language === "ny" ? "Malamulo" : "Terms"}
-            </Link>
+            <p className="text-sm text-muted-foreground">
+              {language === "ny" ? "Wopangidwa ku Malawi" : "Made in Malawi"} • 2024
+            </p>
+            <div className="flex gap-4">
+              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
+                {language === "ny" ? "Thandizo" : "Help"}
+              </Link>
+              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
+                {language === "ny" ? "Malamulo" : "Terms"}
+              </Link>
+              <Link href="#" className="text-sm text-muted-foreground hover:text-foreground">
+                {language === "ny" ? "Chinsinsi" : "Privacy"}
+              </Link>
+            </div>
           </div>
         </div>
       </footer>

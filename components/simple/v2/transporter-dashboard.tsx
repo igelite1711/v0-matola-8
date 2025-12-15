@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState, useEffect } from "react"
+import Link from "next/link"
 import {
   Truck,
   MapPin,
@@ -19,6 +20,7 @@ import {
   DollarSign,
   Award,
   Users,
+  Home,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -29,6 +31,9 @@ import { formatMWK } from "@/lib/payments/mobile-money"
 import { EmptyState } from "./ui/empty-state"
 import { PullToRefresh } from "./ui/pull-to-refresh"
 import { NetworkStatus } from "./ui/network-status"
+import { FullPageSkeleton } from "./ui/loading-skeleton"
+import { ErrorState } from "./ui/error-state"
+import { LoadDetailModal } from "./load-detail-modal"
 
 const MOCK_LOADS = [
   {
@@ -80,8 +85,7 @@ const MOCK_BADGES: BadgeType[] = ["first_trip", "trips_10", "fast_responder", "r
 export function TransporterDashboardV2() {
   const { language } = useTranslation()
   const [isOnline, setIsOnline] = useState(true)
-  const [showLoadDetail, setShowLoadDetail] = useState<string | null>(null)
-  const [showCelebration, setShowCelebration] = useState(false)
+  const [selectedLoad, setSelectedLoad] = useState<(typeof MOCK_LOADS)[0] | null>(null)
   const seasonalData = getSeasonalData()
 
   const [isLoading, setIsLoading] = useState(true)
@@ -134,6 +138,28 @@ export function TransporterDashboardV2() {
   ]
 
   const trustLevel = getTrustLevel(78)
+
+  if (isLoading) {
+    return <FullPageSkeleton type="transporter" />
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <ErrorState
+          type="generic"
+          onRetry={() => {
+            setIsLoading(true)
+            setError(null)
+            setTimeout(() => {
+              setLoads(MOCK_LOADS)
+              setIsLoading(false)
+            }, 1500)
+          }}
+        />
+      </div>
+    )
+  }
 
   return (
     <>
@@ -233,7 +259,9 @@ export function TransporterDashboardV2() {
           <div className="mb-6">
             <div className="flex items-center justify-between mb-3">
               <h3 className="font-medium text-foreground">{language === "ny" ? "Ma Badge Anu" : "Your Badges"}</h3>
-              <button className="text-sm text-primary">{language === "ny" ? "Onani Onse" : "View All"}</button>
+              <Link href="/simple/v2/achievements" className="text-sm text-primary">
+                {language === "ny" ? "Onani Onse" : "View All"}
+              </Link>
             </div>
             <div className="flex gap-2 overflow-x-auto pb-2 -mx-4 px-4">
               {MOCK_BADGES.map((badge) => {
@@ -250,10 +278,13 @@ export function TransporterDashboardV2() {
                   </div>
                 )
               })}
-              <div className="flex-shrink-0 flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-3 py-2">
+              <Link
+                href="/simple/v2/achievements"
+                className="flex-shrink-0 flex items-center gap-2 rounded-full bg-primary/10 border border-primary/20 px-3 py-2"
+              >
                 <Award className="h-4 w-4 text-primary" />
                 <span className="text-sm font-medium text-primary whitespace-nowrap">+4 more</span>
-              </div>
+              </Link>
             </div>
           </div>
 
@@ -308,12 +339,7 @@ export function TransporterDashboardV2() {
             ) : (
               <div className="space-y-4">
                 {loads.map((load) => (
-                  <LoadCard
-                    key={load.id}
-                    load={load}
-                    language={language}
-                    onViewDetails={() => setShowLoadDetail(load.id)}
-                  />
+                  <LoadCard key={load.id} load={load} language={language} onViewDetails={() => setSelectedLoad(load)} />
                 ))}
               </div>
             )}
@@ -338,24 +364,31 @@ export function TransporterDashboardV2() {
           </div>
         </div>
 
+        {/* Bottom Navigation */}
         <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border px-4 py-2 pb-safe">
           <div className="mx-auto max-w-md flex items-center justify-around">
-            <NavItem icon={Truck} label={language === "ny" ? "Kwathu" : "Home"} active />
-            <NavItem icon={Package} label={language === "ny" ? "Ntchito" : "Jobs"} />
+            <NavItem icon={Home} label={language === "ny" ? "Kwathu" : "Home"} href="/simple/v2/transporter" active />
+            <NavItem icon={Package} label={language === "ny" ? "Ntchito" : "Jobs"} href="/simple/v2/transporter" />
 
-            <button className="flex h-14 w-14 -mt-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30">
+            <Link
+              href="/simple/v2/transporter"
+              className="flex h-14 w-14 -mt-6 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg shadow-primary/30"
+            >
               <MapPin className="h-7 w-7" />
-            </button>
+            </Link>
 
-            <NavItem icon={DollarSign} label={language === "ny" ? "Ndalama" : "Earnings"} />
-            <NavItem icon={Users} label={language === "ny" ? "Mbiri" : "Profile"} />
+            <NavItem
+              icon={DollarSign}
+              label={language === "ny" ? "Ndalama" : "Earnings"}
+              href="/simple/v2/transporter"
+            />
+            <NavItem icon={Users} label={language === "ny" ? "Mbiri" : "Profile"} href="/simple/v2/profile" />
           </div>
         </nav>
-
-        {showCelebration && (
-          <CelebrationModal badge="trips_10" language={language} onClose={() => setShowCelebration(false)} />
-        )}
       </PullToRefresh>
+
+      {/* Load Detail Modal */}
+      <LoadDetailModal isOpen={!!selectedLoad} onClose={() => setSelectedLoad(null)} load={selectedLoad} />
     </>
   )
 }
@@ -363,16 +396,18 @@ export function TransporterDashboardV2() {
 function NavItem({
   icon: Icon,
   label,
+  href,
   active = false,
   badge,
 }: {
   icon: React.ElementType
   label: string
+  href: string
   active?: boolean
   badge?: number
 }) {
   return (
-    <button className="flex flex-col items-center gap-1 px-3 py-2 relative">
+    <Link href={href} className="flex flex-col items-center gap-1 px-3 py-2 relative">
       <Icon className={cn("h-6 w-6", active ? "text-primary" : "text-muted-foreground")} />
       <span className={cn("text-xs", active ? "text-primary font-medium" : "text-muted-foreground")}>{label}</span>
       {badge && (
@@ -380,7 +415,7 @@ function NavItem({
           {badge}
         </span>
       )}
-    </button>
+    </Link>
   )
 }
 
@@ -491,55 +526,9 @@ function LoadCard({
         >
           {language === "ny" ? "Zambiri" : "Details"}
         </Button>
-        <Button className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground">
+        <Button className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground" onClick={onViewDetails}>
           {language === "ny" ? "Vomerani" : "Accept"}
         </Button>
-      </div>
-    </div>
-  )
-}
-
-function CelebrationModal({
-  badge,
-  language,
-  onClose,
-}: {
-  badge: BadgeType
-  language: "en" | "ny"
-  onClose: () => void
-}) {
-  const def = BADGE_DEFINITIONS[badge]
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-background/80 backdrop-blur-sm p-4">
-      <div className="relative w-full max-w-sm rounded-3xl bg-card border border-border p-8 text-center overflow-hidden">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div
-            className="absolute top-0 left-1/4 w-2 h-2 bg-primary rounded-full animate-bounce"
-            style={{ animationDelay: "0s" }}
-          />
-          <div
-            className="absolute top-0 left-1/2 w-2 h-2 bg-success rounded-full animate-bounce"
-            style={{ animationDelay: "0.1s" }}
-          />
-          <div
-            className="absolute top-0 left-3/4 w-2 h-2 bg-warning rounded-full animate-bounce"
-            style={{ animationDelay: "0.2s" }}
-          />
-        </div>
-
-        <div className="relative">
-          <div className="text-6xl mb-4">{def.icon}</div>
-          <h2 className="text-2xl font-bold text-foreground mb-2">
-            {language === "ny" ? "Zikomo!" : "Congratulations!"}
-          </h2>
-          <p className="text-lg font-semibold text-primary mb-2">{language === "ny" ? def.nameNy : def.name}</p>
-          <p className="text-muted-foreground mb-6">{language === "ny" ? def.descriptionNy : def.description}</p>
-
-          <Button onClick={onClose} className="w-full h-12 bg-primary text-primary-foreground rounded-xl">
-            {language === "ny" ? "Chabwino!" : "Awesome!"}
-          </Button>
-        </div>
       </div>
     </div>
   )

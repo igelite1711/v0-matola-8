@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { Trophy, Lock, Sparkles, Star, TrendingUp, Zap } from "lucide-react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Trophy, Lock, Sparkles, Star, TrendingUp, Zap, ChevronLeft } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n/use-language"
 import {
@@ -11,6 +12,7 @@ import {
   getRarityColor,
   getRarityBgColor,
 } from "@/lib/gamification/celebration-system"
+import { AchievementsSkeleton } from "./ui/loading-skeleton"
 
 // Mock user data
 const MOCK_USER_ACHIEVEMENTS = [
@@ -25,21 +27,36 @@ const MOCK_TOTAL_POINTS = 1150
 
 export function AchievementsPage() {
   const { language } = useTranslation()
+  const router = useRouter()
   const [filter, setFilter] = useState<"all" | "earned" | "locked">("all")
   const [category, setCategory] = useState<"all" | "milestone" | "streak" | "community" | "seasonal">("all")
+  const [isLoading, setIsLoading] = useState(true)
+  const [userAchievements, setUserAchievements] = useState<string[]>([])
+  const [totalPoints, setTotalPoints] = useState(0)
 
-  const level = getUserLevel(MOCK_TOTAL_POINTS)
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true)
+      await new Promise((resolve) => setTimeout(resolve, 1000))
+      setUserAchievements(MOCK_USER_ACHIEVEMENTS)
+      setTotalPoints(MOCK_TOTAL_POINTS)
+      setIsLoading(false)
+    }
+    loadData()
+  }, [])
+
+  const level = getUserLevel(totalPoints)
   const allAchievements = Object.values(ACHIEVEMENTS)
 
   const filteredAchievements = allAchievements.filter((a) => {
-    const isEarned = MOCK_USER_ACHIEVEMENTS.includes(a.id)
+    const isEarned = userAchievements.includes(a.id)
     if (filter === "earned" && !isEarned) return false
     if (filter === "locked" && isEarned) return false
     if (category !== "all" && a.type !== category) return false
     return true
   })
 
-  const earnedCount = MOCK_USER_ACHIEVEMENTS.length
+  const earnedCount = userAchievements.length
   const totalCount = allAchievements.length
 
   const categories = [
@@ -49,17 +66,31 @@ export function AchievementsPage() {
     { id: "community", label: language === "ny" ? "Gulu" : "Community", icon: TrendingUp },
   ]
 
+  if (isLoading) {
+    return <AchievementsSkeleton />
+  }
+
   return (
     <div className="min-h-screen bg-background pb-24">
       {/* Header with Level Progress */}
       <header className="sticky top-0 z-40 bg-background border-b border-border">
         <div className="mx-auto max-w-2xl px-4 py-4">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-xl font-bold text-foreground">{language === "ny" ? "Zopezedwa" : "Achievements"}</h1>
-              <p className="text-sm text-muted-foreground">
-                {earnedCount} / {totalCount} {language === "ny" ? "zopezedwa" : "unlocked"}
-              </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => router.back()}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border"
+              >
+                <ChevronLeft className="h-5 w-5 text-foreground" />
+              </button>
+              <div>
+                <h1 className="text-xl font-bold text-foreground">
+                  {language === "ny" ? "Zopezedwa" : "Achievements"}
+                </h1>
+                <p className="text-sm text-muted-foreground">
+                  {earnedCount} / {totalCount} {language === "ny" ? "zopezedwa" : "unlocked"}
+                </p>
+              </div>
             </div>
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-warning/10">
               <Trophy className="h-7 w-7 text-warning" />
@@ -76,7 +107,7 @@ export function AchievementsPage() {
                 <div>
                   <p className="font-semibold text-foreground">{language === "ny" ? level.titleNy : level.title}</p>
                   <p className="text-sm text-muted-foreground">
-                    {MOCK_TOTAL_POINTS.toLocaleString()} {language === "ny" ? "mfundo" : "points"}
+                    {totalPoints.toLocaleString()} {language === "ny" ? "mfundo" : "points"}
                   </p>
                 </div>
               </div>
@@ -147,7 +178,7 @@ export function AchievementsPage() {
         {/* Achievements Grid */}
         <div className="grid grid-cols-2 gap-4">
           {filteredAchievements.map((achievement) => {
-            const isEarned = MOCK_USER_ACHIEVEMENTS.includes(achievement.id)
+            const isEarned = userAchievements.includes(achievement.id)
             return (
               <AchievementCard key={achievement.id} achievement={achievement} isEarned={isEarned} language={language} />
             )

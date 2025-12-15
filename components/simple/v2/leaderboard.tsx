@@ -1,11 +1,13 @@
 "use client"
 
-import { useState } from "react"
-import { Trophy, Medal, Crown, TrendingUp, Shield, Users } from "lucide-react"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
+import { Trophy, Medal, Crown, TrendingUp, Shield, Users, ChevronLeft, TrendingDown } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n/use-language"
 import { formatMWK } from "@/lib/payments/mobile-money"
 import { getTrustLevel } from "@/lib/trust/trust-system"
+import { LeaderboardSkeleton } from "./ui/loading-skeleton"
 
 interface LeaderboardEntry {
   rank: number
@@ -102,8 +104,21 @@ const MOCK_LEADERBOARD: LeaderboardEntry[] = [
 
 export function Leaderboard() {
   const { language } = useTranslation()
+  const router = useRouter()
   const [period, setPeriod] = useState<"weekly" | "monthly" | "allTime">("weekly")
   const [region, setRegion] = useState<"all" | "central" | "southern" | "northern">("all")
+  const [isLoading, setIsLoading] = useState(true)
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([])
+
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true)
+      await new Promise((resolve) => setTimeout(resolve, 1200))
+      setLeaderboard(MOCK_LEADERBOARD)
+      setIsLoading(false)
+    }
+    loadData()
+  }, [period, region])
 
   const periodOptions = [
     { id: "weekly", label: language === "ny" ? "Sabata" : "Week" },
@@ -118,27 +133,36 @@ export function Leaderboard() {
     { id: "northern", label: language === "ny" ? "Chakumpoto" : "Northern" },
   ]
 
-  // Find current user's rank
-  const currentUser = MOCK_LEADERBOARD.find((e) => e.isYou)
+  const currentUser = leaderboard.find((e) => e.isYou)
+
+  if (isLoading) {
+    return <LeaderboardSkeleton />
+  }
 
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Header */}
       <header className="sticky top-0 z-40 bg-background/80 backdrop-blur-lg border-b border-border px-4 py-4">
         <div className="mx-auto max-w-2xl">
           <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-xl font-bold text-foreground">{language === "ny" ? "Oyamba" : "Leaderboard"}</h1>
-              <p className="text-sm text-muted-foreground">
-                {language === "ny" ? "Oyendetsa abwino kwambiri" : "Top performing transporters"}
-              </p>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => router.back()}
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border"
+              >
+                <ChevronLeft className="h-5 w-5 text-foreground" />
+              </button>
+              <div>
+                <h1 className="text-xl font-bold text-foreground">{language === "ny" ? "Oyamba" : "Leaderboard"}</h1>
+                <p className="text-sm text-muted-foreground">
+                  {language === "ny" ? "Oyendetsa abwino kwambiri" : "Top performing transporters"}
+                </p>
+              </div>
             </div>
             <div className="flex h-12 w-12 items-center justify-center rounded-full bg-warning/10">
               <Trophy className="h-6 w-6 text-warning" />
             </div>
           </div>
 
-          {/* Period Selector */}
           <div className="flex gap-2 mb-3">
             {periodOptions.map((opt) => (
               <button
@@ -154,7 +178,6 @@ export function Leaderboard() {
             ))}
           </div>
 
-          {/* Region Selector */}
           <div className="flex gap-2 overflow-x-auto pb-1">
             {regionOptions.map((opt) => (
               <button
@@ -175,7 +198,6 @@ export function Leaderboard() {
       </header>
 
       <div className="mx-auto max-w-2xl px-4 py-6">
-        {/* Your Rank Summary */}
         {currentUser && (
           <div className="mb-6 rounded-2xl bg-gradient-to-r from-primary/10 to-success/10 border border-primary/20 p-4">
             <div className="flex items-center justify-between">
@@ -191,6 +213,11 @@ export function Leaderboard() {
                         <TrendingUp className="h-3 w-3" />+{currentUser.rankChange}
                       </span>
                     )}
+                    {currentUser.trend === "down" && (
+                      <span className="flex items-center gap-0.5 text-destructive text-sm">
+                        <TrendingDown className="h-3 w-3" />-{currentUser.rankChange}
+                      </span>
+                    )}
                     <span className="text-sm text-muted-foreground">
                       {currentUser.weeklyTrips} {language === "ny" ? "maulendo" : "trips"}
                     </span>
@@ -203,7 +230,6 @@ export function Leaderboard() {
               </div>
             </div>
 
-            {/* Progress to next rank */}
             <div className="mt-4">
               <div className="flex justify-between text-xs text-muted-foreground mb-1">
                 <span>#{currentUser.rank}</span>
@@ -219,80 +245,76 @@ export function Leaderboard() {
           </div>
         )}
 
-        {/* Top 3 Podium */}
-        <div className="mb-6 flex items-end justify-center gap-3">
-          {/* 2nd Place */}
-          <div className="flex flex-col items-center">
-            <div className="relative mb-2">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary border-2 border-muted">
-                <span className="text-xl font-bold text-muted-foreground">
-                  {MOCK_LEADERBOARD[1].name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </span>
+        {leaderboard.length >= 3 && (
+          <div className="mb-6 flex items-end justify-center gap-3">
+            <div className="flex flex-col items-center">
+              <div className="relative mb-2">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-secondary border-2 border-muted">
+                  <span className="text-xl font-bold text-muted-foreground">
+                    {leaderboard[1].name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </span>
+                </div>
+                <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-secondary border-2 border-background">
+                  <Medal className="h-3.5 w-3.5 text-muted-foreground" />
+                </div>
               </div>
-              <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-secondary border-2 border-background">
-                <Medal className="h-3.5 w-3.5 text-muted-foreground" />
+              <div className="h-20 w-20 rounded-t-xl bg-secondary/50 flex flex-col items-center justify-center">
+                <span className="text-2xl font-bold text-muted-foreground">2</span>
+                <span className="text-xs text-muted-foreground">{leaderboard[1].weeklyTrips}</span>
               </div>
             </div>
-            <div className="h-20 w-20 rounded-t-xl bg-secondary/50 flex flex-col items-center justify-center">
-              <span className="text-2xl font-bold text-muted-foreground">2</span>
-              <span className="text-xs text-muted-foreground">{MOCK_LEADERBOARD[1].weeklyTrips}</span>
+
+            <div className="flex flex-col items-center">
+              <div className="relative mb-2">
+                <div className="flex h-20 w-20 items-center justify-center rounded-full bg-warning/10 border-2 border-warning">
+                  <span className="text-2xl font-bold text-warning">
+                    {leaderboard[0].name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </span>
+                </div>
+                <div className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-warning border-2 border-background">
+                  <Crown className="h-4 w-4 text-white" />
+                </div>
+              </div>
+              <div className="h-28 w-24 rounded-t-xl bg-warning/10 flex flex-col items-center justify-center border-2 border-warning/30">
+                <span className="text-3xl font-bold text-warning">1</span>
+                <span className="text-xs text-warning">{leaderboard[0].weeklyTrips}</span>
+              </div>
+            </div>
+
+            <div className="flex flex-col items-center">
+              <div className="relative mb-2">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-orange-500/10 border-2 border-orange-500/50">
+                  <span className="text-xl font-bold text-orange-500">
+                    {leaderboard[2].name
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")}
+                  </span>
+                </div>
+                <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-orange-500/20 border-2 border-background">
+                  <Medal className="h-3.5 w-3.5 text-orange-500" />
+                </div>
+              </div>
+              <div className="h-16 w-20 rounded-t-xl bg-orange-500/10 flex flex-col items-center justify-center">
+                <span className="text-2xl font-bold text-orange-500">3</span>
+                <span className="text-xs text-orange-500">{leaderboard[2].weeklyTrips}</span>
+              </div>
             </div>
           </div>
+        )}
 
-          {/* 1st Place */}
-          <div className="flex flex-col items-center">
-            <div className="relative mb-2">
-              <div className="flex h-20 w-20 items-center justify-center rounded-full bg-warning/10 border-2 border-warning">
-                <span className="text-2xl font-bold text-warning">
-                  {MOCK_LEADERBOARD[0].name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </span>
-              </div>
-              <div className="absolute -bottom-1 -right-1 flex h-7 w-7 items-center justify-center rounded-full bg-warning border-2 border-background">
-                <Crown className="h-4 w-4 text-white" />
-              </div>
-            </div>
-            <div className="h-28 w-24 rounded-t-xl bg-warning/10 flex flex-col items-center justify-center border-2 border-warning/30">
-              <span className="text-3xl font-bold text-warning">1</span>
-              <span className="text-xs text-warning">{MOCK_LEADERBOARD[0].weeklyTrips}</span>
-            </div>
-          </div>
-
-          {/* 3rd Place */}
-          <div className="flex flex-col items-center">
-            <div className="relative mb-2">
-              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-orange-500/10 border-2 border-orange-500/50">
-                <span className="text-xl font-bold text-orange-500">
-                  {MOCK_LEADERBOARD[2].name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </span>
-              </div>
-              <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-orange-500/20 border-2 border-background">
-                <Medal className="h-3.5 w-3.5 text-orange-500" />
-              </div>
-            </div>
-            <div className="h-16 w-20 rounded-t-xl bg-orange-500/10 flex flex-col items-center justify-center">
-              <span className="text-2xl font-bold text-orange-500">3</span>
-              <span className="text-xs text-orange-500">{MOCK_LEADERBOARD[2].weeklyTrips}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Full Leaderboard List */}
         <div className="space-y-3">
-          {MOCK_LEADERBOARD.slice(3).map((entry) => (
+          {leaderboard.slice(3).map((entry) => (
             <LeaderboardCard key={entry.userId} entry={entry} language={language} />
           ))}
         </div>
 
-        {/* Community Stats */}
         <div className="mt-8 rounded-2xl bg-card border border-border p-4">
           <div className="flex items-center gap-2 mb-4">
             <Users className="h-5 w-5 text-primary" />
@@ -331,7 +353,6 @@ function LeaderboardCard({ entry, language }: { entry: LeaderboardEntry; languag
       )}
     >
       <div className="flex items-center gap-4">
-        {/* Rank */}
         <div
           className={cn(
             "flex h-10 w-10 items-center justify-center rounded-full font-bold",
@@ -341,7 +362,6 @@ function LeaderboardCard({ entry, language }: { entry: LeaderboardEntry; languag
           {entry.rank}
         </div>
 
-        {/* Avatar & Name */}
         <div className="flex-1">
           <div className="flex items-center gap-2">
             <p className={cn("font-semibold", entry.isYou ? "text-primary" : "text-foreground")}>
@@ -364,7 +384,6 @@ function LeaderboardCard({ entry, language }: { entry: LeaderboardEntry; languag
           </div>
         </div>
 
-        {/* Earnings & Trend */}
         <div className="text-right">
           <p className="font-semibold text-foreground">{formatMWK(entry.weeklyEarnings)}</p>
           {entry.trend && entry.rankChange && (
@@ -379,6 +398,7 @@ function LeaderboardCard({ entry, language }: { entry: LeaderboardEntry; languag
               )}
             >
               {entry.trend === "up" && <TrendingUp className="h-3 w-3" />}
+              {entry.trend === "down" && <TrendingDown className="h-3 w-3" />}
               {entry.trend === "up" ? "+" : entry.trend === "down" ? "-" : ""}
               {entry.rankChange}
             </span>

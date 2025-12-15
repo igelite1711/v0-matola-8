@@ -1,6 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import {
   MapPin,
   Navigation,
@@ -11,12 +12,15 @@ import {
   Shield,
   Truck,
   Share2,
+  ChevronLeft,
+  Loader2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useTranslation } from "@/lib/i18n/use-language"
 import { getTrustLevel } from "@/lib/trust/trust-system"
 import { formatMWK } from "@/lib/payments/mobile-money"
+import { CardSkeleton } from "./ui/loading-skeleton"
 
 interface Checkpoint {
   id: string
@@ -31,41 +35,51 @@ interface LiveTrackingProps {
   onClose?: () => void
 }
 
+const MOCK_SHIPMENT = {
+  id: "SH001",
+  origin: "Lilongwe",
+  destination: "Blantyre",
+  status: "in_transit",
+  cargo: "Farm Produce",
+  weight: 2500,
+  price: 85000,
+  transporter: {
+    name: "John Banda",
+    phone: "0999123456",
+    rating: 4.8,
+    trustScore: 85,
+    vehicleReg: "BT 4521",
+    vehicleType: "10-ton Truck",
+  },
+}
+
+const CHECKPOINTS: Checkpoint[] = [
+  { id: "1", name: "Lilongwe (Start)", nameNy: "Lilongwe (Chiyambi)", status: "passed", time: "9:30 AM" },
+  { id: "2", name: "Dedza", nameNy: "Dedza", status: "passed", time: "11:15 AM" },
+  { id: "3", name: "Ntcheu", nameNy: "Ntcheu", status: "current", time: "Now" },
+  { id: "4", name: "Balaka", nameNy: "Balaka", status: "upcoming" },
+  { id: "5", name: "Blantyre (End)", nameNy: "Blantyre (Mapeto)", status: "upcoming" },
+]
+
 export function LiveTracking({ shipmentId, onClose }: LiveTrackingProps) {
   const { language } = useTranslation()
+  const router = useRouter()
   const [progress, setProgress] = useState(65)
   const [eta, setEta] = useState("2:45 PM")
+  const [isLoading, setIsLoading] = useState(true)
+  const [shipment, setShipment] = useState<typeof MOCK_SHIPMENT | null>(null)
+  const [isSharing, setIsSharing] = useState(false)
 
-  // Mock data - in production would come from journey tracker
-  const shipment = {
-    id: shipmentId,
-    origin: "Lilongwe",
-    destination: "Blantyre",
-    status: "in_transit",
-    cargo: "Farm Produce",
-    weight: 2500,
-    price: 85000,
-    transporter: {
-      name: "John Banda",
-      phone: "0999123456",
-      rating: 4.8,
-      trustScore: 85,
-      vehicleReg: "BT 4521",
-      vehicleType: "10-ton Truck",
-    },
-  }
+  useEffect(() => {
+    const loadData = async () => {
+      setIsLoading(true)
+      await new Promise((resolve) => setTimeout(resolve, 1200))
+      setShipment(MOCK_SHIPMENT)
+      setIsLoading(false)
+    }
+    loadData()
+  }, [shipmentId])
 
-  const checkpoints: Checkpoint[] = [
-    { id: "1", name: "Lilongwe (Start)", nameNy: "Lilongwe (Chiyambi)", status: "passed", time: "9:30 AM" },
-    { id: "2", name: "Dedza", nameNy: "Dedza", status: "passed", time: "11:15 AM" },
-    { id: "3", name: "Ntcheu", nameNy: "Ntcheu", status: "current", time: "Now" },
-    { id: "4", name: "Balaka", nameNy: "Balaka", status: "upcoming" },
-    { id: "5", name: "Blantyre (End)", nameNy: "Blantyre (Mapeto)", status: "upcoming" },
-  ]
-
-  const trustLevel = getTrustLevel(shipment.transporter.trustScore)
-
-  // Simulate progress updates
   useEffect(() => {
     const interval = setInterval(() => {
       setProgress((p) => Math.min(p + 0.5, 100))
@@ -73,10 +87,77 @@ export function LiveTracking({ shipmentId, onClose }: LiveTrackingProps) {
     return () => clearInterval(interval)
   }, [])
 
+  const handleShare = async () => {
+    setIsSharing(true)
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: `Shipment ${shipmentId} Tracking`,
+          text: `Track my shipment from ${shipment?.origin} to ${shipment?.destination}`,
+          url: window.location.href,
+        })
+      } else {
+        await navigator.clipboard.writeText(window.location.href)
+        alert(language === "ny" ? "Ulalo wakopeka!" : "Link copied!")
+      }
+    } catch (err) {
+      console.error("Share failed:", err)
+    } finally {
+      setIsSharing(false)
+    }
+  }
+
+  const handleCall = () => {
+    if (shipment?.transporter.phone) {
+      window.location.href = `tel:${shipment.transporter.phone}`
+    }
+  }
+
+  const handleMessage = () => {
+    if (shipment?.transporter.phone) {
+      window.location.href = `sms:${shipment.transporter.phone}`
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background pb-24">
+        <div className="h-64 bg-secondary animate-pulse" />
+        <div className="mx-auto max-w-2xl px-4 py-6 space-y-4">
+          <CardSkeleton />
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      </div>
+    )
+  }
+
+  if (!shipment) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Truck className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+          <p className="text-muted-foreground">{language === "ny" ? "Palibe zambiri" : "Shipment not found"}</p>
+          <Button onClick={() => router.back()} className="mt-4">
+            {language === "ny" ? "Bwerera" : "Go Back"}
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  const trustLevel = getTrustLevel(shipment.transporter.trustScore)
+
   return (
     <div className="min-h-screen bg-background pb-24">
-      {/* Map Area - Placeholder */}
       <div className="relative h-64 bg-secondary">
+        <button
+          onClick={() => router.back()}
+          className="absolute top-4 left-4 z-10 flex h-10 w-10 items-center justify-center rounded-full bg-card/80 backdrop-blur"
+        >
+          <ChevronLeft className="h-5 w-5 text-foreground" />
+        </button>
+
         <div className="absolute inset-0 flex items-center justify-center">
           <div className="text-center">
             <div className="relative">
@@ -92,7 +173,6 @@ export function LiveTracking({ shipmentId, onClose }: LiveTrackingProps) {
           </div>
         </div>
 
-        {/* Route Line Visualization */}
         <div className="absolute bottom-4 left-4 right-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
             <span>{shipment.origin}</span>
@@ -106,14 +186,20 @@ export function LiveTracking({ shipmentId, onClose }: LiveTrackingProps) {
           </div>
         </div>
 
-        {/* Share Button */}
-        <button className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-card/80 backdrop-blur">
-          <Share2 className="h-5 w-5 text-foreground" />
+        <button
+          onClick={handleShare}
+          disabled={isSharing}
+          className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-card/80 backdrop-blur disabled:opacity-50"
+        >
+          {isSharing ? (
+            <Loader2 className="h-5 w-5 text-foreground animate-spin" />
+          ) : (
+            <Share2 className="h-5 w-5 text-foreground" />
+          )}
         </button>
       </div>
 
       <div className="mx-auto max-w-2xl px-4 py-6">
-        {/* ETA Card */}
         <div className="mb-6 rounded-2xl bg-gradient-to-r from-primary/10 to-success/10 border border-primary/20 p-4">
           <div className="flex items-center justify-between">
             <div>
@@ -129,7 +215,6 @@ export function LiveTracking({ shipmentId, onClose }: LiveTrackingProps) {
           </div>
         </div>
 
-        {/* Transporter Card */}
         <div className="mb-6 rounded-2xl bg-card border border-border p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
@@ -157,10 +242,15 @@ export function LiveTracking({ shipmentId, onClose }: LiveTrackingProps) {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button size="icon" variant="outline" className="h-10 w-10 rounded-full border-border bg-transparent">
+              <Button
+                size="icon"
+                variant="outline"
+                onClick={handleMessage}
+                className="h-10 w-10 rounded-full border-border bg-transparent"
+              >
                 <MessageCircle className="h-5 w-5" />
               </Button>
-              <Button size="icon" className="h-10 w-10 rounded-full bg-primary">
+              <Button size="icon" onClick={handleCall} className="h-10 w-10 rounded-full bg-primary">
                 <Phone className="h-5 w-5" />
               </Button>
             </div>
@@ -178,13 +268,11 @@ export function LiveTracking({ shipmentId, onClose }: LiveTrackingProps) {
           </div>
         </div>
 
-        {/* Journey Checkpoints */}
         <div className="mb-6">
           <h3 className="font-semibold text-foreground mb-4">{language === "ny" ? "Ulendo" : "Journey Progress"}</h3>
           <div className="space-y-0">
-            {checkpoints.map((cp, index) => (
+            {CHECKPOINTS.map((cp, index) => (
               <div key={cp.id} className="flex gap-4">
-                {/* Timeline */}
                 <div className="flex flex-col items-center">
                   <div
                     className={cn(
@@ -204,12 +292,11 @@ export function LiveTracking({ shipmentId, onClose }: LiveTrackingProps) {
                       <MapPin className="h-4 w-4" />
                     )}
                   </div>
-                  {index < checkpoints.length - 1 && (
+                  {index < CHECKPOINTS.length - 1 && (
                     <div className={cn("w-0.5 h-10", cp.status === "passed" ? "bg-success" : "bg-border")} />
                   )}
                 </div>
 
-                {/* Content */}
                 <div className="flex-1 pb-6">
                   <div className="flex items-center justify-between">
                     <p className={cn("font-medium", cp.status === "current" ? "text-primary" : "text-foreground")}>
@@ -237,7 +324,6 @@ export function LiveTracking({ shipmentId, onClose }: LiveTrackingProps) {
           </div>
         </div>
 
-        {/* Shipment Details */}
         <div className="rounded-2xl bg-card border border-border p-4">
           <h3 className="font-semibold text-foreground mb-3">
             {language === "ny" ? "Za Katundu" : "Shipment Details"}
@@ -262,7 +348,6 @@ export function LiveTracking({ shipmentId, onClose }: LiveTrackingProps) {
           </div>
         </div>
 
-        {/* Safety Notice */}
         <div className="mt-6 p-4 rounded-2xl bg-warning/10 border border-warning/20">
           <div className="flex items-start gap-3">
             <AlertTriangle className="h-5 w-5 text-warning flex-shrink-0 mt-0.5" />
