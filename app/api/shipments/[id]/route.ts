@@ -1,113 +1,129 @@
-import { type NextRequest, NextResponse } from "next/server"
-import { generalRateLimiter } from "@/lib/api/middleware/rate-limit"
-import { authMiddleware, isAuthenticated } from "@/lib/api/middleware/auth"
-import { createValidator, isValidated } from "@/lib/api/middleware/validate"
-import { updateShipmentSchema, type UpdateShipmentInput } from "@/lib/api/schemas/shipment"
-import { db } from "@/lib/api/services/db"
+/**
+ * GET /api/shipments/[id] - Get shipment details
+ * PATCH /api/shipments/[id] - Update shipment
+ */
 
-const validateUpdate = createValidator<UpdateShipmentInput>(updateShipmentSchema)
+import { NextRequest, NextResponse } from "next/server"
+import { z } from "zod"
+import { prisma } from "@/lib/db/prisma"
+import { requireAuth } from "@/lib/auth/middleware"
+import { logger } from "@/lib/monitoring/logger"
+import { updateShipmentSchema } from "@/lib/validators/api-schemas"
 
-export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const startTime = Date.now()
-  const { id } = await params
-
-  // Rate limiting
-  const rateLimitError = await generalRateLimiter(req)
-  if (rateLimitError) return rateLimitError
-
-  // Auth
-  const authResult = await authMiddleware(req)
-  if (!isAuthenticated(authResult)) return authResult
-
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
-    const shipment = await db.getShipmentById(id)
+    const auth = await requireAuth(request)
+    const { id } = await params
 
-    if (!shipment) {
-      return NextResponse.json({ error: "Shipment not found", code: "NOT_FOUND" }, { status: 404 })
-    }
-
-    // Check access - owner or matched transporter
-    const { user } = authResult
-    const isOwner = shipment.shipper_id === user.userId
-    const isMatchedTransporter = user.role === "transporter" && shipment.transporter_id === user.userId
-    const isAdmin = user.role === "admin"
-
-    if (!isOwner && !isMatchedTransporter && !isAdmin) {
-      return NextResponse.json({ error: "Access denied", code: "FORBIDDEN" }, { status: 403 })
-    }
-
-    const responseTime = Date.now() - startTime
-
-    return NextResponse.json(shipment, {
-      headers: {
-        "X-Response-Time": `${responseTime}ms`,
+    const shipment = await prisma.shipment.findUnique({
+      where: { id },
+      include: {
+        shipper: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            rating: true,
+            verified: true,
+            verificationLevel: true,
+          },
+        },
+        checkpoints: true,
+        matches: {
+          include: {
+            transporter: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+                rating: true,
+              },
+            },
+          },
+        },
+        bids: {
+          include: {
+            transporter: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+                rating: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        },
       },
     })
+
+    if (!shipment) {
+      return NextResponse.json({ error: "Shipment not found" }, { status: 404 })
+    }
+
+    // Check access
+    if (shipment.shipperId !== auth.userId && auth.role !== "admin") {
+      // Allow transporters to view posted shipments
+      if (shipment.status !== "posted") {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+      }
+    }
+
+    return NextResponse.json({ shipment })
   } catch (error) {
-    console.error("Get shipment error:", error)
-    return NextResponse.json({ error: "Internal server error", code: "SERVER_ERROR" }, { status: 500 })
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+    logger.error("Get shipment error", { error: error instanceof Error ? error.message : String(error) })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-
-  // Rate limiting
-  const rateLimitError = await generalRateLimiter(req)
-  if (rateLimitError) return rateLimitError
-
-  // Auth
-  const authResult = await authMiddleware(req)
-  if (!isAuthenticated(authResult)) return authResult
-
-  // Validation
-  const validationResult = await validateUpdate(req)
-  if (!isValidated(validationResult)) return validationResult
-
-  const { user } = authResult
-  const data = validationResult.data
-
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> },
+) {
   try {
-    const shipment = await db.getShipmentById(id)
+    const auth = await requireAuth(request)
+    const { id } = await params
+
+    const shipment = await prisma.shipment.findUnique({
+      where: { id },
+    })
 
     if (!shipment) {
-      return NextResponse.json({ error: "Shipment not found", code: "NOT_FOUND" }, { status: 404 })
+      return NextResponse.json({ error: "Shipment not found" }, { status: 404 })
     }
 
-    // Only owner can update
-    if (shipment.shipper_id !== user.userId && user.role !== "admin") {
-      return NextResponse.json({ error: "Only the owner can update this shipment", code: "FORBIDDEN" }, { status: 403 })
+    // Only shipper or admin can update
+    if (shipment.shipperId !== auth.userId && auth.role !== "admin") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 })
     }
 
-    // Cannot edit if already matched
-    if (shipment.status !== "pending") {
-      return NextResponse.json(
-        {
-          error: "Cannot edit shipment after it has been matched",
-          code: "SHIPMENT_LOCKED",
-        },
-        { status: 400 },
-      )
-    }
-
-    const updated = await db.updateShipment(id, {
-      ...data,
-      departure_date: data.departure_date ? new Date(data.departure_date).toISOString() : undefined,
+    const body = await request.json()
+    
+    // Validate update data
+    const validated = updateShipmentSchema.parse(body)
+    
+    const updated = await prisma.shipment.update({
+      where: { id },
+      data: validated,
     })
 
-    // Audit log
-    await db.createAuditLog({
-      user_id: user.userId,
-      action: "update",
-      entity: "shipment",
-      entity_id: id,
-      changes: data,
-      ip_address: req.headers.get("x-forwarded-for") || undefined,
-    })
+    logger.info("Shipment updated", { shipmentId: id, userId: auth.userId })
 
-    return NextResponse.json(updated)
+    return NextResponse.json({ success: true, shipment: updated })
   } catch (error) {
-    console.error("Update shipment error:", error)
-    return NextResponse.json({ error: "Internal server error", code: "SERVER_ERROR" }, { status: 500 })
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({ error: "Invalid request data", details: error.errors }, { status: 400 })
+    }
+    if (error instanceof Error && error.message === "Unauthorized") {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
+    }
+    logger.error("Update shipment error", { error: error instanceof Error ? error.message : String(error) })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }

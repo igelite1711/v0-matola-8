@@ -1,0 +1,473 @@
+// Prisma Schema for MATOLA LOGISTICS PLATFORM
+// Database: SQLite (Local Development)
+// Note: Using url in datasource is valid for Prisma 5.x
+// For Prisma 7.x compatibility, connection URL can be moved to prisma.config.ts
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================
+// USERS & AUTHENTICATION
+// ============================================
+
+model User {
+  id                String   @id @default(cuid())
+  phone             String   @unique
+  name              String
+  email             String?
+  whatsapp          String?
+  pinHash           String   // bcrypt hashed PIN
+  avatar            String?
+  role              String   // "shipper" | "transporter" | "broker" | "admin"
+  rating            Float    @default(0)
+  totalRatings      Int      @default(0)
+  verified          Boolean  @default(false)
+  verificationLevel String   @default("none") // "none" | "phone" | "id" | "community" | "rtoa" | "full"
+  preferredLanguage String   @default("en") // "en" | "ny"
+  
+  // Malawi-specific fields
+  communityVouchers String?  // JSON string of user IDs who vouched
+  chiefReference    String?  // JSON: { name, village, district }
+  rtoaMembership    String?
+  
+  // Relationships
+  shipments         Shipment[]
+  matches           Match[]
+  bids              Bid[]
+  vehicles          Vehicle[]
+  transactions      WalletTransaction[]
+  ratings           Rating[] @relation("UserRatings")
+  ratedBy           Rating[] @relation("RatedBy")
+  ussdSessions      USSDSession[]
+  auditLogs         AuditLog[] @relation("UserAuditLogs")
+  notifications     Notification[]
+  userAchievements  UserAchievement[]
+  leaderboardEntries LeaderboardEntry[]
+  raisedDisputes    Dispute[] @relation("DisputeRaisedBy")
+  
+  // Transporter-specific (nullable)
+  transporterProfile TransporterProfile?
+  
+  // Shipper-specific (nullable)
+  shipperProfile    ShipperProfile?
+  
+  // Broker-specific (nullable)
+  brokerProfile     BrokerProfile?
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([phone])
+  @@index([role])
+  @@index([verificationLevel])
+}
+
+// ============================================
+// TRANSPORTER PROFILE
+// ============================================
+
+model TransporterProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  vehicleType     String   // "pickup" | "canter" | "small_truck" | "medium_truck" | "large_truck" | "flatbed" | "refrigerated" | "tanker"
+  vehiclePlate    String
+  vehicleCapacity Int
+  licenseNumber   String
+  insuranceExpiry DateTime?
+  
+  unionMembership String   @default("independent") // "rtoa" | "masta" | "cooperative" | "independent"
+  driverLicense   String?
+  
+  totalTrips      Int      @default(0)
+  completedTrips  Int      @default(0)
+  cancelledTrips  Int      @default(0)
+  onTimeRate      Float    @default(1.0)
+  preferredRoutes String?  // JSON array string
+  hasRefrigeration Boolean @default(false)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+// ============================================
+// SHIPPER PROFILE
+// ============================================
+
+model ShipperProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  businessType    String   @default("individual") // "individual" | "sme" | "corporate" | "farmer" | "trader" | "manufacturer"
+  businessName    String?
+  taxId           String?
+  
+  totalShipments  Int      @default(0)
+  completedShipments Int   @default(0)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+// ============================================
+// BROKER PROFILE
+// ============================================
+
+model BrokerProfile {
+  id                String   @id @default(cuid())
+  userId            String   @unique
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  businessName      String
+  licenseNumber     String?
+  
+  matchesMade       Int      @default(0)
+  specializedRoutes String?  // JSON array string
+  specializedCargo  String?  // JSON array string
+  operatingRegions  String?  // JSON array string
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+// ============================================
+// VEHICLES
+// ============================================
+
+model Vehicle {
+  id              String   @id @default(cuid())
+  userId          String
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  plate           String   @unique
+  type            String   // Vehicle type as string
+  capacity        Int      // in kg
+  make            String?
+  model           String?
+  year            Int?
+  licenseExpiry   DateTime?
+  insuranceExpiry DateTime?
+  
+  isActive        Boolean  @default(true)
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([userId])
+}
+
+// ============================================
+// LOCATIONS
+// ============================================
+
+model Location {
+  id        String   @id @default(cuid())
+  name      String
+  latitude  Float
+  longitude Float
+  city      String
+  district  String
+  region    String   // "Northern" | "Central" | "Southern"
+  
+  createdAt DateTime @default(now())
+  
+  @@index([region])
+  @@index([district])
+}
+
+// ============================================
+// SHIPMENTS
+// ============================================
+
+model Shipment {
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  referenceNumber   String    @unique
+  description       String
+  cargoType         String    // Cargo type as string
+  weight            Int       // in kg
+  estimatedValue    Float?
+  
+  pickupLocation    String
+  deliveryLocation  String
+  pickupDate        DateTime
+  deliveryDate      DateTime
+  
+  status            String    @default("draft") // ShipmentStatus as string
+  seasonalCategory  String?   // SeasonalCategory as string
+  
+  // Pricing
+  quotedPrice       Float?
+  finalPrice        Float?
+  paymentMethod     String?   // PaymentMethod as string
+  
+  // Relationships
+  matches           Match[]
+  bids              Bid[]
+  transactions      WalletTransaction[]
+  ratings           Rating[]
+  disputes          Dispute[]
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+  @@index([cargoType])
+}
+
+// ============================================
+// MATCHING ENGINE
+// ============================================
+
+model Match {
+  id              String    @id @default(cuid())
+  shipmentId      String
+  shipment        Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  
+  transporterId   String
+  transporter     User      @relation(fields: [transporterId], references: [id], onDelete: Cascade)
+  
+  status          String    @default("pending") // MatchStatus as string
+  matchScore      Float     // 0-100 score
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([shipmentId])
+  @@index([transporterId])
+  @@index([status])
+}
+
+// ============================================
+// BIDDING SYSTEM
+// ============================================
+
+model Bid {
+  id          String    @id @default(cuid())
+  shipmentId  String
+  shipment    Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  
+  transporterId String
+  transporter   User    @relation(fields: [transporterId], references: [id], onDelete: Cascade)
+  
+  amount      Float
+  message     String?
+  status      String    @default("pending") // BidStatus as string
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([shipmentId])
+  @@index([transporterId])
+}
+
+// ============================================
+// WALLET & TRANSACTIONS
+// ============================================
+
+model WalletTransaction {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shipmentId  String?
+  shipment    Shipment? @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
+  
+  type        String    // TransactionType as string
+  amount      Float
+  status      String    @default("pending") // TransactionStatus as string
+  description String?
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================
+// RATINGS & REVIEWS
+// ============================================
+
+model Rating {
+  id              String    @id @default(cuid())
+  shipmentId      String?
+  shipment        Shipment? @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
+  
+  ratedById       String
+  ratedBy         User      @relation("UserRatings", fields: [ratedById], references: [id], onDelete: Cascade)
+  
+  receiverId      String
+  receiver        User      @relation("RatedBy", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  overallRating   Int       // 1-5
+  categoryRatings String?   // JSON: { punctuality: 5, communication: 4, ... }
+  tags            String?   // JSON array string
+  review          String?
+  
+  createdAt       DateTime  @default(now())
+  
+  @@index([ratedById])
+  @@index([receiverId])
+  @@index([shipmentId])
+}
+
+// ============================================
+// DISPUTES
+// ============================================
+
+model Dispute {
+  id            String    @id @default(cuid())
+  shipmentId    String
+  shipment      Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  
+  raisedById    String
+  raisedBy      User      @relation("DisputeRaisedBy", fields: [raisedById], references: [id])
+  
+  type          String    // DisputeType as string
+  description   String
+  voiceNoteUrl  String?
+  images        String?   // JSON array of URLs
+  
+  status        String    @default("open") // DisputeStatus as string
+  resolution    String?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([shipmentId])
+  @@index([raisedById])
+  @@index([status])
+}
+
+// ============================================
+// USSD SESSIONS
+// ============================================
+
+model USSDSession {
+  id              String    @id @default(cuid())
+  userId          String?
+  user            User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  
+  sessionId       String    @unique
+  phoneNumber     String
+  state           String    // State machine state
+  context         String?   // JSON session context data
+  stepCount       Int       @default(0)
+  lastActivity    DateTime  @default(now())
+  
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([phoneNumber])
+  @@index([sessionId])
+}
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  type      String    // NotificationType as string
+  title     String
+  message   String
+  data      String?   // JSON additional data
+  channels  String?   // JSON array: ["sms", "whatsapp", "push", "in_app"]
+  read      Boolean   @default(false)
+  
+  createdAt DateTime  @default(now())
+  
+  @@index([userId])
+  @@index([read])
+}
+
+// ============================================
+// ACHIEVEMENTS & GAMIFICATION
+// ============================================
+
+model Achievement {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  name        String
+  description String?
+  icon        String?
+  category    String    // AchievementCategory as string
+  userAchievements UserAchievement[]
+  
+  createdAt   DateTime  @default(now())
+}
+
+model UserAchievement {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  achievementId String?
+  achievement   Achievement? @relation(fields: [achievementId], references: [id], onDelete: SetNull)
+  
+  unlockedAt    DateTime  @default(now())
+  
+  @@unique([userId, achievementId])
+  @@index([userId])
+}
+
+// ============================================
+// LEADERBOARDS
+// ============================================
+
+model LeaderboardEntry {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  period    String    // "weekly" | "monthly" | "all_time"
+  rank      Int
+  score     Int
+  
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  @@unique([userId, period])
+  @@index([period])
+  @@index([rank])
+}
+
+// ============================================
+// AUDIT LOGGING
+// ============================================
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  userId      String?
+  user        User?     @relation("UserAuditLogs", fields: [userId], references: [id], onDelete: SetNull)
+  action      String
+  resourceType String
+  resourceId  String?
+  details     String?   // JSON details
+  ipAddress   String?
+  
+  createdAt   DateTime  @default(now())
+  
+  @@index([userId])
+  @@index([resourceType])
+}
+

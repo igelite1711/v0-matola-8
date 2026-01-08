@@ -1,143 +1,199 @@
-import { type NextRequest, NextResponse } from "next/server"
-import crypto from "crypto"
-import { whatsappRateLimiter } from "@/lib/api/middleware/rate-limit"
-import { db } from "@/lib/api/services/db"
+/**
+ * POST /api/whatsapp/webhook
+ * WhatsApp Business API Webhook Handler (Twilio)
+ * PRD Requirements: WhatsApp Business integration with full conversation flows
+ */
 
-// Verify WhatsApp webhook signature
-function verifyWhatsAppSignature(payload: string, signature: string, secret: string): boolean {
-  const expectedSignature = crypto.createHmac("sha256", secret).update(payload).digest("hex")
-  return `sha256=${expectedSignature}` === signature
-}
+import { NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/db/prisma"
+import { checkGeneralRateLimit } from "@/lib/rate-limit/rate-limiter"
+import { logger } from "@/lib/monitoring/logger"
+import { processWhatsAppMessage } from "@/lib/whatsapp/whatsapp-service"
+import { Redis } from "@upstash/redis"
+import twilio from "twilio"
 
-// Handle webhook verification (GET request from WhatsApp)
-export async function GET(req: NextRequest) {
-  const url = new URL(req.url)
-  const mode = url.searchParams.get("hub.mode")
-  const token = url.searchParams.get("hub.verify_token")
-  const challenge = url.searchParams.get("hub.challenge")
+const redis = process.env.UPSTASH_REDIS_REST_URL
+  ? new Redis({
+      url: process.env.UPSTASH_REDIS_REST_URL!,
+      token: process.env.UPSTASH_REDIS_REST_TOKEN!,
+    })
+  : null
 
-  const verifyToken = process.env.WHATSAPP_VERIFY_TOKEN
+// Initialize Twilio client
+const twilioClient = process.env.TWILIO_ACCOUNT_SID && process.env.TWILIO_AUTH_TOKEN
+  ? twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN)
+  : null
 
-  if (mode === "subscribe" && token === verifyToken) {
-    console.log("WhatsApp webhook verified")
-    return new Response(challenge, { status: 200 })
+const WHATSAPP_SESSION_TTL = 3600 // 1 hour
+
+/**
+ * Get or create WhatsApp conversation context
+ */
+async function getWhatsAppContext(phone: string): Promise<any> {
+  if (!redis) {
+    return null
   }
 
-  return NextResponse.json({ error: "Forbidden" }, { status: 403 })
+  const key = `whatsapp:context:${phone}`
+  return await redis.get(key)
 }
 
-// Handle incoming messages (POST request from WhatsApp)
-export async function POST(req: NextRequest) {
-  // Rate limiting
-  const rateLimitError = await whatsappRateLimiter(req)
-  if (rateLimitError) return rateLimitError
+/**
+ * Update WhatsApp conversation context
+ */
+async function updateWhatsAppContext(phone: string, context: any): Promise<void> {
+  if (!redis) return
 
-  const rawBody = await req.text()
-  const signature = req.headers.get("x-hub-signature-256") || ""
-  const secret = process.env.WHATSAPP_APP_SECRET || ""
+  const key = `whatsapp:context:${phone}`
+  await redis.set(key, context, { ex: WHATSAPP_SESSION_TTL })
+}
 
-  // Verify signature
-  if (!verifyWhatsAppSignature(rawBody, signature, secret)) {
-    console.error("Invalid WhatsApp webhook signature")
-    return NextResponse.json({ error: "Invalid signature" }, { status: 401 })
+/**
+ * Send WhatsApp message via Twilio
+ */
+async function sendWhatsAppMessage(to: string, message: string): Promise<void> {
+  if (!twilioClient || !process.env.TWILIO_WHATSAPP_NUMBER) {
+    logger.warn("Twilio not configured, message not sent", { to })
+    return
   }
 
   try {
-    const payload = JSON.parse(rawBody)
+    await twilioClient.messages.create({
+      from: process.env.TWILIO_WHATSAPP_NUMBER,
+      to: `whatsapp:${to}`,
+      body: message,
+    })
+  } catch (error) {
+    logger.error("Failed to send WhatsApp message", {
+      error: error instanceof Error ? error.message : String(error),
+      to,
+    })
+  }
+}
 
-    // Process each entry
-    for (const entry of payload.entry || []) {
-      for (const change of entry.changes || []) {
-        if (change.field === "messages") {
-          const value = change.value
-          const messages = value.messages || []
+/**
+ * Verify Twilio webhook signature
+ */
+function verifyTwilioSignature(request: NextRequest, body: string): boolean {
+  const signature = request.headers.get("x-twilio-signature")
+  if (!signature || !process.env.TWILIO_AUTH_TOKEN) {
+    return false // Skip verification in development
+  }
 
-          for (const message of messages) {
-            await processWhatsAppMessage({
-              from: message.from,
-              type: message.type,
-              text: message.text?.body,
-              timestamp: message.timestamp,
-              messageId: message.id,
-            })
-          }
-        }
-      }
+  try {
+    return twilio.validateRequest(
+      process.env.TWILIO_AUTH_TOKEN,
+      signature,
+      request.url,
+      body,
+    )
+  } catch {
+    return false
+  }
+}
+
+export async function POST(request: NextRequest) {
+  const requestId = `whatsapp_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+  const startTime = Date.now()
+
+  try {
+    // Parse Twilio webhook format
+    const formData = await request.formData()
+    const from = formData.get("From")?.toString() || ""
+    const body = formData.get("Body")?.toString() || ""
+    const mediaUrl = formData.get("MediaUrl0")?.toString()
+    const messageSid = formData.get("MessageSid")?.toString()
+
+    if (!from || !body) {
+      logger.warn("WhatsApp webhook missing required fields", { requestId, from, hasBody: !!body })
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
     }
 
-    // Audit log
-    await db.createAuditLog({
-      action: "webhook_received",
-      entity: "whatsapp",
-      changes: { messageCount: payload.entry?.length || 0 },
+    // Verify Twilio signature (in production)
+    const bodyString = Array.from(formData.entries())
+      .map(([key, value]) => `${key}=${encodeURIComponent(value.toString())}`)
+      .join("&")
+    
+    if (process.env.NODE_ENV === "production" && !verifyTwilioSignature(request, bodyString)) {
+      logger.warn("Invalid Twilio signature", { requestId })
+      return NextResponse.json({ error: "Invalid signature" }, { status: 403 })
+    }
+
+    // Extract phone number
+    const phoneNumber = from.replace("whatsapp:", "").replace("+", "")
+
+    // Rate limiting
+    const rateLimit = await checkGeneralRateLimit(phoneNumber)
+    if (!rateLimit.allowed) {
+      await sendWhatsAppMessage(
+        phoneNumber,
+        "Too many requests. Please wait a moment and try again.",
+      )
+      return NextResponse.json({ error: "Rate limited" }, { status: 429 })
+    }
+
+    // Get conversation context
+    const context = await getWhatsAppContext(phoneNumber)
+
+    // Process message
+    const result = await processWhatsAppMessage(phoneNumber, body, context)
+
+    // Update context
+    await updateWhatsAppContext(phoneNumber, {
+      phone: phoneNumber,
+      state: result.newState,
+      newContext: result.newContext,
+      language: result.newContext.language || "en",
+      updatedAt: Date.now(),
     })
 
-    return NextResponse.json({ received: true })
+    // Send response via Twilio
+    await sendWhatsAppMessage(phoneNumber, result.response)
+
+    logger.info("WhatsApp message processed", {
+      requestId,
+      from: phoneNumber.slice(-4), // Last 4 digits only
+      messageLength: body.length,
+      state: result.newState,
+      duration: Date.now() - startTime,
+    })
+
+    // Return TwiML response (Twilio expects this)
+    return new NextResponse(
+      `<?xml version="1.0" encoding="UTF-8"?>
+<Response>
+  <Message>${result.response}</Message>
+</Response>`,
+      {
+        status: 200,
+        headers: {
+          "Content-Type": "text/xml",
+          "X-Request-ID": requestId,
+        },
+      },
+    )
   } catch (error) {
-    console.error("WhatsApp webhook error:", error)
-    return NextResponse.json({ error: "Webhook processing failed" }, { status: 500 })
+    logger.error("WhatsApp webhook error", {
+      requestId,
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+    })
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
   }
 }
 
-interface WhatsAppMessage {
-  from: string
-  type: string
-  text?: string
-  timestamp: string
-  messageId: string
-}
+/**
+ * GET endpoint for webhook verification (Twilio requirement)
+ */
+export async function GET(request: NextRequest) {
+  // Twilio webhook verification
+  const { searchParams } = new URL(request.url)
+  const challenge = searchParams.get("hub.challenge")
 
-async function processWhatsAppMessage(message: WhatsAppMessage) {
-  console.log("Processing WhatsApp message:", message)
-
-  // TODO: Implement message processing logic
-  // 1. Parse user intent
-  // 2. Look up user by phone
-  // 3. Generate appropriate response
-  // 4. Send reply via WhatsApp Business API
-
-  // For now, log the message
-  const { from, text, type } = message
-
-  if (type === "text" && text) {
-    // Simple command handling
-    const lowerText = text.toLowerCase()
-
-    if (lowerText.includes("help") || lowerText === "hi") {
-      await sendWhatsAppMessage(
-        from,
-        "Welcome to Matola! 🚛\n\nCommands:\n• LOADS - View available loads\n• POST - Post a new shipment\n• TRIPS - View your trips\n• BALANCE - Check wallet balance",
-      )
-    } else if (lowerText.includes("loads")) {
-      await sendWhatsAppMessage(
-        from,
-        "Available Loads:\n\n1. Lilongwe → Blantyre\n   500kg | MWK 45,000\n\n2. Mzuzu → Lilongwe\n   300kg | MWK 35,000\n\nReply with load number to accept.",
-      )
-    } else if (lowerText.includes("balance")) {
-      await sendWhatsAppMessage(
-        from,
-        "💰 Your Matola Balance\n\nAvailable: MWK 0\nPending: MWK 0\n\nReply WITHDRAW to cash out.",
-      )
-    }
+  if (challenge) {
+    // Facebook/Meta webhook verification
+    return new NextResponse(challenge, { status: 200 })
   }
-}
 
-async function sendWhatsAppMessage(to: string, message: string) {
-  // TODO: Integrate with WhatsApp Business API
-  console.log(`[WhatsApp] To: ${to}, Message: ${message}`)
-
-  // Production implementation:
-  // const response = await fetch(`https://graph.facebook.com/v17.0/${phoneNumberId}/messages`, {
-  //   method: 'POST',
-  //   headers: {
-  //     'Authorization': `Bearer ${process.env.WHATSAPP_ACCESS_TOKEN}`,
-  //     'Content-Type': 'application/json'
-  //   },
-  //   body: JSON.stringify({
-  //     messaging_product: 'whatsapp',
-  //     to,
-  //     type: 'text',
-  //     text: { body: message }
-  //   })
-  // })
+  return NextResponse.json({ status: "ok", service: "matola-whatsapp" })
 }

@@ -7,6 +7,7 @@ import { db } from "@/lib/api/services/db"
 import { initiateAirtelPayment } from "@/lib/payments/airtel-money"
 import { initiateTnmPayment } from "@/lib/payments/tnm-mpamba"
 import { createEscrow, checkDuplicatePayment } from "@/lib/payments/escrow-state-machine"
+import { logger } from "@/lib/monitoring/logger"
 
 const validate = createValidator<InitiatePaymentInput>(initiatePaymentSchema)
 
@@ -121,7 +122,11 @@ export async function POST(req: NextRequest) {
       ussd_prompt: paymentResult.ussdPrompt,
     })
   } catch (error) {
-    console.error("Initiate payment error:", error)
+    logger.error("Initiate payment error", {
+      userId: authResult?.user?.userId,
+      shipmentId: validationResult?.data?.shipmentId,
+      error: error instanceof Error ? error.message : String(error),
+    })
     return NextResponse.json({ error: "Internal server error", code: "SERVER_ERROR" }, { status: 500 })
   }
 }

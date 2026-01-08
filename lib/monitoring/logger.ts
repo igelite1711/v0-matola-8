@@ -73,11 +73,13 @@ class Logger {
     this.output(this.formatEntry("warn", message, context))
   }
 
-  error(message: string, context?: LogContext & { error?: Error }): void {
+  error(message: string, context?: LogContext & { error?: any }): void {
+    const errorObj = context?.error instanceof Error ? context.error : undefined
+    const { error, ...ctxWithoutError } = context || {}
     const entry = this.formatEntry("error", message, {
-      ...context,
-      stack: context?.error?.stack,
-      errorMessage: context?.error?.message,
+      ...ctxWithoutError,
+      stack: errorObj?.stack,
+      errorMessage: errorObj?.message,
     })
     this.output(entry)
   }

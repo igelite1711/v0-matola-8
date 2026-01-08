@@ -38,3 +38,9 @@ export function ToastNotification() {
     </div>
   )
 }
+
+// Toast function - to be used from app context
+export const toast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+  // This function is a placeholder - actual implementation uses useApp hook in client components
+  console.log(`Toast [${type}]: ${message}`)
+}

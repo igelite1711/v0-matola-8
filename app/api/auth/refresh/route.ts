@@ -1,85 +1,68 @@
 /**
- * Token Refresh Endpoint
- * PRD Requirement: Refresh token rotation
+ * POST /api/auth/refresh
+ * Refresh access token using refresh token
  */
-import { type NextRequest, NextResponse } from "next/server"
-import {
-  verifyRefreshToken,
-  generateToken,
-  generateRefreshToken,
-  blacklistToken,
-  getTokenExpirySeconds,
-} from "@/lib/api/middleware/auth"
-import { db } from "@/lib/api/services/db"
+
+import { NextRequest, NextResponse } from "next/server"
+import { verifyToken, generateAccessToken } from "@/lib/auth/jwt"
+import { prisma } from "@/lib/db/prisma"
 import { logger } from "@/lib/monitoring/logger"
 
 export async function POST(request: NextRequest) {
-  // Get refresh token from cookie or body
-  const refreshTokenCookie = request.cookies.get("refresh_token")?.value
-  let refreshToken = refreshTokenCookie
+  const requestId = request.headers.get("X-Request-ID") || `req_${Date.now()}`
 
-  if (!refreshToken) {
-    try {
-      const body = await request.json()
-      refreshToken = body.refreshToken
-    } catch {
-      // No body, continue with cookie check
+  try {
+    // Get refresh token from cookie or body
+    const refreshToken =
+      request.cookies.get("refreshToken")?.value || (await request.json()).refreshToken
+
+    if (!refreshToken) {
+      return NextResponse.json({ error: "Refresh token required" }, { status: 401 })
     }
-  }
 
-  if (!refreshToken) {
-    return NextResponse.json({ error: "Refresh token required", code: "MISSING_REFRESH_TOKEN" }, { status: 401 })
-  }
+    // Verify refresh token
+    const payload = await verifyToken(refreshToken)
 
-  const payload = await verifyRefreshToken(refreshToken)
+    // Verify user still exists
+    const user = await prisma.user.findUnique({
+      where: { id: payload.userId },
+    })
 
-  if (!payload) {
-    return NextResponse.json({ error: "Invalid refresh token", code: "INVALID_REFRESH_TOKEN" }, { status: 401 })
-  }
+    if (!user) {
+      return NextResponse.json({ error: "User not found" }, { status: 401 })
+    }
 
-  // Get user from database
-  const user = await db.users.findById(payload.userId)
-
-  if (!user) {
-    return NextResponse.json({ error: "User not found", code: "USER_NOT_FOUND" }, { status: 404 })
-  }
-
-  // Blacklist old refresh token (rotation)
-  blacklistToken(refreshToken)
-
-  // Generate new tokens
-  const newAccessToken = await generateToken({
-    userId: user.id,
-    phone: user.phone,
-    role: user.role,
-  })
-
-  const { token: newRefreshToken } = await generateRefreshToken(user.id)
-
-  logger.info("Token refreshed", {
-    userId: user.id,
-    ip: request.headers.get("x-forwarded-for") || "unknown",
-  })
-
-  const response = NextResponse.json({
-    token: newAccessToken,
-    expiresIn: getTokenExpirySeconds(),
-    user: {
-      id: user.id,
+    // Generate new access token
+    const newAccessToken = await generateAccessToken({
+      userId: user.id,
       phone: user.phone,
-      name: user.name,
       role: user.role,
-    },
-  })
+    })
 
-  // Set new refresh token as HTTP-only cookie
-  response.cookies.set("refresh_token", newRefreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 7 * 24 * 60 * 60, // 7 days
-    path: "/",
-  })
+    logger.info("Token refreshed", { requestId, userId: user.id })
 
-  return response
+    const response = NextResponse.json(
+      {
+        success: true,
+        accessToken: newAccessToken,
+      },
+      { status: 200 },
+    )
+
+    // Update access token cookie
+    response.cookies.set("accessToken", newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 24 * 60 * 60,
+    })
+
+    return response
+  } catch (error) {
+    logger.error("Token refresh error", {
+      requestId,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return NextResponse.json({ error: "Invalid refresh token" }, { status: 401 })
+  }
 }

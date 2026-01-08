@@ -1,152 +1,196 @@
 /**
- * Metrics Collection Service
- * PRD Requirements: API response times, error rates, business metrics
+ * Application Metrics Collection
+ * Tracks key performance indicators and business metrics
  */
 
-interface MetricValue {
+import { logger } from './logger'
+
+export interface Metric {
+  name: string
   value: number
-  timestamp: number
-  labels: Record<string, string>
+  timestamp: Date
+  tags?: Record<string, string>
 }
 
-interface HistogramBuckets {
-  values: number[]
-  count: number
-  sum: number
-}
+class MetricsCollector {
+  private metrics: Map<string, Metric[]> = new Map()
+  private counters: Map<string, number> = new Map()
+  private histograms: Map<string, number[]> = new Map()
 
-class MetricsService {
-  private counters = new Map<string, MetricValue[]>()
-  private histograms = new Map<string, HistogramBuckets>()
-  private gauges = new Map<string, MetricValue>()
+  /**
+   * Increment a counter metric
+   */
+  increment(name: string, value: number = 1, tags?: Record<string, string>) {
+    const current = this.counters.get(name) || 0
+    this.counters.set(name, current + value)
 
-  // Counter operations
-  increment(name: string, value = 1, labels: Record<string, string> = {}): void {
-    const key = this.getKey(name, labels)
-    const existing = this.counters.get(key) || []
-    existing.push({ value, timestamp: Date.now(), labels })
-    this.counters.set(key, existing)
+    this.record({
+      name,
+      value: current + value,
+      timestamp: new Date(),
+      tags,
+    })
   }
 
-  // Histogram operations (for response times)
-  recordHistogram(name: string, value: number, labels: Record<string, string> = {}): void {
-    const key = this.getKey(name, labels)
-    const bucket = this.histograms.get(key) || { values: [], count: 0, sum: 0 }
-    bucket.values.push(value)
-    bucket.count++
-    bucket.sum += value
-    this.histograms.set(key, bucket)
+  /**
+   * Record a gauge (current value)
+   */
+  gauge(name: string, value: number, tags?: Record<string, string>) {
+    this.record({
+      name,
+      value,
+      timestamp: new Date(),
+      tags,
+    })
   }
 
-  // Gauge operations
-  setGauge(name: string, value: number, labels: Record<string, string> = {}): void {
-    const key = this.getKey(name, labels)
-    this.gauges.set(key, { value, timestamp: Date.now(), labels })
+  /**
+   * Record a histogram value (for response times, etc.)
+   */
+  histogram(name: string, value: number, tags?: Record<string, string>) {
+    const values = this.histograms.get(name) || []
+    values.push(value)
+    this.histograms.set(name, values.slice(-1000)) // Keep last 1000 values
+
+    this.record({
+      name: `${name}.histogram`,
+      value,
+      timestamp: new Date(),
+      tags,
+    })
   }
 
-  // Get percentile from histogram
-  getPercentile(name: string, percentile: number, labels: Record<string, string> = {}): number {
-    const key = this.getKey(name, labels)
-    const bucket = this.histograms.get(key)
-    if (!bucket || bucket.values.length === 0) return 0
-
-    const sorted = [...bucket.values].sort((a, b) => a - b)
-    const index = Math.ceil((percentile / 100) * sorted.length) - 1
-    return sorted[Math.max(0, index)]
+  /**
+   * Get counter value
+   */
+  getCounter(name: string): number {
+    return this.counters.get(name) || 0
   }
 
-  private getKey(name: string, labels: Record<string, string>): string {
-    const labelStr = Object.entries(labels)
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([k, v]) => `${k}="${v}"`)
-      .join(",")
-    return labelStr ? `${name}{${labelStr}}` : name
+  /**
+   * Get histogram statistics
+   */
+  getHistogramStats(name: string): {
+    count: number
+    min: number
+    max: number
+    avg: number
+    p50: number
+    p95: number
+    p99: number
+  } | null {
+    const values = this.histograms.get(name)
+    if (!values || values.length === 0) {
+      return null
+    }
+
+    const sorted = [...values].sort((a, b) => a - b)
+    const sum = sorted.reduce((a, b) => a + b, 0)
+
+    return {
+      count: sorted.length,
+      min: sorted[0],
+      max: sorted[sorted.length - 1],
+      avg: sum / sorted.length,
+      p50: sorted[Math.floor(sorted.length * 0.5)],
+      p95: sorted[Math.floor(sorted.length * 0.95)],
+      p99: sorted[Math.floor(sorted.length * 0.99)],
+    }
   }
 
-  // Export metrics in Prometheus format
-  toPrometheusFormat(): string {
+  /**
+   * Get all metrics for export
+   */
+  getAllMetrics(): Metric[] {
+    const all: Metric[] = []
+    this.metrics.forEach((metrics) => {
+      all.push(...metrics)
+    })
+    return all
+  }
+
+  /**
+   * Export metrics in Prometheus format
+   */
+  exportPrometheus(): string {
     const lines: string[] = []
 
     // Counters
-    for (const [key, values] of this.counters.entries()) {
-      const total = values.reduce((sum, v) => sum + v.value, 0)
-      lines.push(`# TYPE ${key.split("{")[0]} counter`)
-      lines.push(`${key} ${total}`)
-    }
+    this.counters.forEach((value, name) => {
+      lines.push(`# TYPE ${name} counter`)
+      lines.push(`${name} ${value}`)
+    })
 
     // Histograms
-    for (const [key, bucket] of this.histograms.entries()) {
-      const baseName = key.split("{")[0]
-      lines.push(`# TYPE ${baseName} histogram`)
-      lines.push(`${baseName}_count${key.includes("{") ? key.substring(key.indexOf("{")) : ""} ${bucket.count}`)
-      lines.push(`${baseName}_sum${key.includes("{") ? key.substring(key.indexOf("{")) : ""} ${bucket.sum}`)
-    }
+    this.histograms.forEach((values, name) => {
+      const stats = this.getHistogramStats(name)
+      if (stats) {
+        lines.push(`# TYPE ${name}_histogram histogram`)
+        lines.push(`${name}_count ${stats.count}`)
+        lines.push(`${name}_sum ${stats.avg * stats.count}`)
+        lines.push(`${name}_min ${stats.min}`)
+        lines.push(`${name}_max ${stats.max}`)
+        lines.push(`${name}_avg ${stats.avg}`)
+        lines.push(`${name}_p50 ${stats.p50}`)
+        lines.push(`${name}_p95 ${stats.p95}`)
+        lines.push(`${name}_p99 ${stats.p99}`)
+      }
+    })
 
-    // Gauges
-    for (const [key, metric] of this.gauges.entries()) {
-      lines.push(`# TYPE ${key.split("{")[0]} gauge`)
-      lines.push(`${key} ${metric.value}`)
-    }
-
-    return lines.join("\n")
+    return lines.join('\n')
   }
 
-  // Get summary for dashboard
-  getSummary(): Record<string, unknown> {
-    return {
-      api_response_time_p50: this.getPercentile("api.response_time", 50),
-      api_response_time_p95: this.getPercentile("api.response_time", 95),
-      api_response_time_p99: this.getPercentile("api.response_time", 99),
-      counters: Object.fromEntries(
-        [...this.counters.entries()].map(([k, v]) => [k, v.reduce((sum, val) => sum + val.value, 0)]),
-      ),
-      gauges: Object.fromEntries([...this.gauges.entries()].map(([k, v]) => [k, v.value])),
-    }
-  }
-
-  // Reset metrics (for testing or periodic cleanup)
-  reset(): void {
+  /**
+   * Reset all metrics
+   */
+  reset() {
+    this.metrics.clear()
     this.counters.clear()
     this.histograms.clear()
-    this.gauges.clear()
+  }
+
+  private record(metric: Metric) {
+    const metrics = this.metrics.get(metric.name) || []
+    metrics.push(metric)
+    // Keep last 1000 metrics per name
+    this.metrics.set(metric.name, metrics.slice(-1000))
+
+    // Log important metrics
+    if (metric.name.includes('error') || metric.name.includes('latency')) {
+      logger.warn('Metric recorded', { metric })
+    }
   }
 }
 
-export const metrics = new MetricsService()
+export const metrics = new MetricsCollector()
 
-// Pre-defined metric helpers
-export const apiMetrics = {
-  recordResponseTime: (path: string, method: string, duration: number) => {
-    metrics.recordHistogram("api.response_time", duration, { path, method })
+// Business metrics helpers
+export const businessMetrics = {
+  shipmentCreated: (userId: string) => {
+    metrics.increment('shipments.created', 1, { userId })
   },
-
-  incrementRequests: (path: string, method: string, status: string) => {
-    metrics.increment("api.requests", 1, { path, method, status })
+  shipmentMatched: (shipmentId: string) => {
+    metrics.increment('shipments.matched', 1, { shipmentId })
   },
-
-  incrementErrors: (path: string, method: string, errorType: string) => {
-    metrics.increment("api.errors", 1, { path, method, error_type: errorType })
+  paymentProcessed: (amount: number, method: string) => {
+    metrics.increment('payments.processed', 1, { method })
+    metrics.gauge('payments.amount', amount, { method })
+  },
+  userRegistered: (role: string) => {
+    metrics.increment('users.registered', 1, { role })
+  },
+  apiRequest: (path: string, method: string, duration: number, statusCode: number) => {
+    metrics.histogram('api.request.duration', duration, { path, method, status: statusCode.toString() })
+    metrics.increment('api.requests', 1, { path, method, status: statusCode.toString() })
   },
 }
 
-export const businessMetrics = {
-  incrementShipmentsCreated: () => {
-    metrics.increment("shipments.created", 1)
+// API metrics helpers for middleware
+export const apiMetrics = {
+  recordResponseTime: (path: string, method: string, duration: number) => {
+    metrics.histogram('api.response_time', duration, { path, method })
   },
-
-  incrementPaymentsCompleted: (method: string) => {
-    metrics.increment("payments.completed", 1, { method })
-  },
-
-  incrementMatchesSuccessful: () => {
-    metrics.increment("matches.successful", 1)
-  },
-
-  incrementUssdSessions: (language: string) => {
-    metrics.increment("ussd.sessions", 1, { language })
-  },
-
-  setActiveUsers: (channel: string, count: number) => {
-    metrics.setGauge("users.active", count, { channel })
+  incrementRequests: (path: string, method: string, statusCode: string) => {
+    metrics.increment('api.request_count', 1, { path, method, status: statusCode })
   },
 }

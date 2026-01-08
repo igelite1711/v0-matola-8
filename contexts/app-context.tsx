@@ -2,8 +2,8 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import type { Shipment, Transporter, Bid } from "@/lib/types"
-import { mockShipments, mockTransporters, mockBids } from "@/lib/mock-data"
 import { getRecommendedLoads } from "@/lib/matching-engine"
+import { api, setTokens, clearTokens, getAccessToken } from "@/lib/api/client"
 
 export type UserRole = "shipper" | "transporter" | "broker" | "admin"
 
@@ -20,6 +20,8 @@ export interface AppUser {
   vehicleCapacity?: number
   isOnline?: boolean
   currentLocation?: { city: string; district: string; region: string }
+  preferredLanguage?: "en" | "ny"
+  verificationLevel?: string
 }
 
 export interface Notification {
@@ -52,19 +54,20 @@ interface AppContextType {
   isLoading: boolean
   login: (phone: string, pin: string, role?: UserRole) => Promise<boolean>
   register: (data: { name: string; phone: string; pin: string; role: UserRole }) => Promise<boolean>
-  logout: () => void
+  logout: () => Promise<void>
 
   // Shipments
   shipments: Shipment[]
   userShipments: Shipment[]
   addShipment: (shipment: Omit<Shipment, "id" | "createdAt" | "updatedAt">) => Promise<Shipment>
-  updateShipment: (id: string, updates: Partial<Shipment>) => void
+  updateShipment: (id: string, updates: Partial<Shipment>) => Promise<void>
   getShipment: (id: string) => Shipment | undefined
+  refreshShipments: () => Promise<void>
 
   // Bids
   bids: Bid[]
   getBidsForShipment: (shipmentId: string) => Bid[]
-  acceptBid: (bidId: string) => void
+  acceptBid: (bidId: string) => Promise<void>
   rejectBid: (bidId: string) => void
   submitBid: (bid: Omit<Bid, "id" | "createdAt" | "status">) => void
 
@@ -85,122 +88,96 @@ interface AppContextType {
 
   isDriverOnline: boolean
   setDriverOnline: (online: boolean) => void
-  driverCapacity: number // 0-100 percentage of available space
+  driverCapacity: number
   setDriverCapacity: (capacity: number) => void
 
   pendingLoadOffer: PendingLoadOffer | null
-  acceptLoadOffer: (shipmentId: string) => void
+  acceptLoadOffer: (shipmentId: string) => Promise<void>
   declineLoadOffer: (shipmentId: string) => void
   recommendedLoads: Array<{ shipment: Shipment; matchScore: number; isBackhaul: boolean }>
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined)
 
-// Mock users for demo
-const mockUsers: Record<string, AppUser> = {
-  shipper: {
-    id: "sh1",
-    name: "John Banda",
-    phone: "0999123456",
-    email: "john@example.com",
-    role: "shipper",
-    verified: true,
-    rating: 4.8,
-  },
-  transporter: {
-    id: "t1",
-    name: "James Phiri",
-    phone: "0888123456",
-    role: "transporter",
-    verified: true,
-    rating: 4.9,
-    vehicleType: "medium_truck",
-    vehicleCapacity: 10000,
-    isOnline: true,
-    currentLocation: { city: "Lilongwe", district: "Lilongwe", region: "Central" },
-  },
-  broker: {
-    id: "b1",
-    name: "Mary Chirwa",
-    phone: "0884123456",
-    role: "broker",
-    verified: true,
-    rating: 4.7,
-  },
-  admin: {
-    id: "a1",
-    name: "Admin User",
-    phone: "0991111111",
-    role: "admin",
-    verified: true,
-    rating: 5.0,
-  },
-}
-
 export function AppProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AppUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [shipments, setShipments] = useState<Shipment[]>(mockShipments)
-  const [bids, setBids] = useState<Bid[]>(mockBids)
-  const [transporters] = useState<Transporter[]>(mockTransporters)
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: "n1",
-      type: "shipment",
-      title: "New Bid Received",
-      message: "Grace Phiri has submitted a bid for your Lilongwe to Blantyre shipment",
-      read: false,
-      createdAt: new Date(Date.now() - 30 * 60 * 1000),
-      link: "/dashboard/shipments/s1",
-    },
-    {
-      id: "n2",
-      type: "payment",
-      title: "Payment Received",
-      message: "MK 185,000 has been deposited to your escrow account",
-      read: false,
-      createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000),
-      link: "/dashboard/payments",
-    },
-    {
-      id: "n3",
-      type: "system",
-      title: "Verification Complete",
-      message: "Your RTOA verification has been approved",
-      read: true,
-      createdAt: new Date(Date.now() - 24 * 60 * 60 * 1000),
-    },
-  ])
+  const [shipments, setShipments] = useState<Shipment[]>([])
+  const [bids, setBids] = useState<Bid[]>([])
+  const [transporters] = useState<Transporter[]>([]) // Would fetch from API if needed
+  const [notifications, setNotifications] = useState<Notification[]>([])
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" | "info" } | null>(null)
 
   const [isDriverOnline, setIsDriverOnline] = useState(true)
-  const [driverCapacity, setDriverCapacity] = useState(100) // 100% available
+  const [driverCapacity, setDriverCapacity] = useState(100)
   const [pendingLoadOffer, setPendingLoadOffer] = useState<PendingLoadOffer | null>(null)
   const [recommendedLoads, setRecommendedLoads] = useState<
     Array<{ shipment: Shipment; matchScore: number; isBackhaul: boolean }>
   >([])
 
-  // Load user from localStorage on mount
+  // Verify token and load user on mount
   useEffect(() => {
-    const savedUser = localStorage.getItem("matola-user")
-    if (savedUser) {
+    const loadUser = async () => {
       try {
-        setUser(JSON.parse(savedUser))
-      } catch {
-        localStorage.removeItem("matola-user")
+        const token = getAccessToken()
+        if (!token) {
+          setIsLoading(false)
+          return
+        }
+
+        const response = await api.verify()
+        if (response.success && response.user) {
+          setUser({
+            id: response.user.id,
+            name: response.user.name,
+            phone: response.user.phone,
+            email: response.user.email,
+            role: response.user.role,
+            verified: response.user.verified,
+            rating: response.user.rating || 0,
+            preferredLanguage: response.user.preferredLanguage || "en",
+            verificationLevel: response.user.verificationLevel,
+            vehicleType: response.user.transporterProfile?.vehicleType,
+            vehicleCapacity: response.user.transporterProfile?.vehicleCapacity,
+          })
+        }
+      } catch (error) {
+        // Client-side error logging
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to verify token:", error)
+      }
+        clearTokens()
+      } finally {
+        setIsLoading(false)
       }
     }
-    setIsLoading(false)
+
+    loadUser()
   }, [])
 
+  // Load shipments when user is authenticated
+  useEffect(() => {
+    if (user) {
+      refreshShipments()
+    }
+  }, [user])
+
+  // Update recommended loads for transporters
   useEffect(() => {
     if (!user || user.role !== "transporter" || !isDriverOnline) {
       setRecommendedLoads([])
       return
     }
 
-    // Create a mock transporter from user data
-    const mockTransporter: Transporter = {
+    // Use matching engine with available shipments
+    const availableShipments = shipments.filter((s) => s.status === "posted")
+    if (availableShipments.length === 0) {
+      setRecommendedLoads([])
+      return
+    }
+
+    // Create transporter object for matching
+    const transporter: Transporter = {
       id: user.id,
       role: "transporter",
       name: user.name,
@@ -208,8 +185,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       rating: user.rating,
       totalRatings: 50,
       verified: user.verified,
-      verificationLevel: "rtoa",
-      preferredLanguage: "en",
+      verificationLevel: (user.verificationLevel as any) || "phone",
+      preferredLanguage: user.preferredLanguage || "en",
       createdAt: new Date(),
       vehicleType: (user.vehicleType as any) || "medium_truck",
       vehiclePlate: "BT 4567",
@@ -221,156 +198,321 @@ export function AppProvider({ children }: { children: ReactNode }) {
       preferredRoutes: ["Lilongwe-Blantyre", "Lilongwe-Mzuzu"],
     }
 
-    const recommendations = getRecommendedLoads(mockTransporter, shipments, 5)
+    const recommendations = getRecommendedLoads(transporter, availableShipments, 5)
     setRecommendedLoads(recommendations)
   }, [user, shipments, isDriverOnline, driverCapacity])
 
-  useEffect(() => {
-    if (!user || user.role !== "transporter" || !isDriverOnline || driverCapacity === 0) {
-      return
-    }
+  const refreshShipments = async () => {
+    if (!user) return
 
-    // Simulate a new load offer every 30-60 seconds
-    const offerInterval = setInterval(() => {
-      if (pendingLoadOffer) return // Don't send new offers if one is pending
-
-      const availableLoads = shipments.filter((s) => s.status === "posted")
-      if (availableLoads.length === 0) return
-
-      const randomLoad = availableLoads[Math.floor(Math.random() * availableLoads.length)]
-      const isBackhaul = user.currentLocation?.city === randomLoad.destination.city
-      const matchScore = 70 + Math.floor(Math.random() * 25) // 70-95%
-
-      setPendingLoadOffer({
-        shipment: randomLoad,
-        matchScore,
-        isBackhaul,
-        expiresAt: new Date(Date.now() + 60000), // 60 seconds
-      })
-
-      // Add notification
-      addNotification({
-        type: "load_offer",
-        title: "New Load Available!",
-        message: `${randomLoad.origin.city} → ${randomLoad.destination.city} - MK ${randomLoad.price.toLocaleString()}`,
-        link: "/dashboard/transporter",
-        loadOffer: {
-          shipmentId: randomLoad.id,
-          matchScore,
-          isBackhaul,
-          expiresAt: new Date(Date.now() + 60000),
+    try {
+      const fetchedShipments = await api.getShipments()
+      // Transform API response to match Shipment type
+      const transformed = fetchedShipments.map((s: any) => ({
+        id: s.id,
+        shipperId: s.shipperId,
+        shipperName: s.shipper?.name || "Unknown",
+        origin: {
+          city: s.originCity,
+          district: s.originDistrict,
+          region: s.originRegion,
+          coordinates: s.originLat && s.originLng ? { lat: s.originLat, lng: s.originLng } : undefined,
+          landmark: s.originLandmark,
+          admarc: s.originAdmarc,
         },
-      })
-    }, 45000) // Check every 45 seconds
+        destination: {
+          city: s.destinationCity,
+          district: s.destinationDistrict,
+          region: s.destinationRegion,
+          coordinates:
+            s.destinationLat && s.destinationLng
+              ? { lat: s.destinationLat, lng: s.destinationLng }
+              : undefined,
+          landmark: s.destinationLandmark,
+          admarc: s.destinationAdmarc,
+        },
+        cargoType: s.cargoType,
+        cargoDescription: s.cargoDescription,
+        cargoDescriptionNy: s.cargoDescriptionNy,
+        weight: s.weight,
+        dimensions:
+          s.length && s.width && s.height
+            ? { length: s.length, width: s.width, height: s.height }
+            : undefined,
+        requiredVehicleType: s.requiredVehicleType,
+        pickupDate: new Date(s.pickupDate),
+        pickupTimeWindow: s.pickupTimeWindow,
+        deliveryDate: s.deliveryDate ? new Date(s.deliveryDate) : undefined,
+        price: s.price,
+        currency: s.currency || "MWK",
+        paymentMethod: s.paymentMethod,
+        status: s.status,
+        isBackhaul: s.isBackhaul,
+        backhaulDiscount: s.backhaulDiscount,
+        specialInstructions: s.specialInstructions,
+        checkpoints: s.checkpoints || [],
+        borderCrossing: s.borderCrossingRequired
+          ? {
+              required: true,
+              borderPost: s.borderPost || "",
+              estimatedClearanceHours: s.estimatedClearanceHours || 0,
+            }
+          : undefined,
+        seasonalCategory: s.seasonalCategory,
+        createdAt: new Date(s.createdAt),
+        updatedAt: new Date(s.updatedAt),
+      })) as Shipment[]
 
-    return () => clearInterval(offerInterval)
-  }, [user, isDriverOnline, driverCapacity, pendingLoadOffer, shipments])
+      setShipments(transformed)
+
+      // Extract bids from matches
+      const allBids: Bid[] = []
+      fetchedShipments.forEach((s: any) => {
+        if (s.bids) {
+          s.bids.forEach((bid: any) => {
+            allBids.push({
+              id: bid.id,
+              shipmentId: bid.shipmentId,
+              transporterId: bid.transporterId,
+              transporterName: bid.transporter?.name || "Unknown",
+              transporterRating: bid.transporter?.rating || 0,
+              proposedPrice: bid.proposedPrice,
+              message: bid.message,
+              messageNy: bid.messageNy,
+              estimatedPickup: new Date(bid.estimatedPickup),
+              status: bid.status,
+              createdAt: new Date(bid.createdAt),
+            })
+          })
+        }
+      })
+      setBids(allBids)
+    } catch (error) {
+      // Client-side error logging
+      if (process.env.NODE_ENV === "development") {
+        console.error("Failed to load shipments:", error)
+      }
+      showToast("Failed to load shipments", "error")
+    }
+  }
 
   const login = async (phone: string, pin: string, role?: UserRole): Promise<boolean> => {
     setIsLoading(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    // For demo, accept any 4-digit PIN and determine role from phone or param
-    if (pin.length === 4) {
-      const userRole = role || (phone.startsWith("088") ? "transporter" : "shipper")
-      const mockUser = mockUsers[userRole]
-      setUser({ ...mockUser, phone })
-      localStorage.setItem("matola-user", JSON.stringify({ ...mockUser, phone }))
+    try {
+      const response = await api.login(phone, pin, role)
+      if (response.success && response.user) {
+        setUser({
+          id: response.user.id,
+          name: response.user.name,
+          phone: response.user.phone,
+          email: response.user.email,
+          role: response.user.role,
+          verified: response.user.verified,
+          rating: response.user.rating || 0,
+          preferredLanguage: response.user.preferredLanguage || "en",
+          verificationLevel: response.user.verificationLevel,
+        })
+        showToast("Login successful!", "success")
+        return true
+      }
+      showToast("Invalid phone or PIN", "error")
+      return false
+    } catch (error: any) {
+      showToast(error.message || "Login failed", "error")
+      return false
+    } finally {
       setIsLoading(false)
-      return true
     }
-
-    setIsLoading(false)
-    return false
   }
 
-  const register = async (data: { name: string; phone: string; pin: string; role: UserRole }): Promise<boolean> => {
+  const register = async (data: {
+    name: string
+    phone: string
+    pin: string
+    role: UserRole
+  }): Promise<boolean> => {
     setIsLoading(true)
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-
-    const newUser: AppUser = {
-      id: `user-${Date.now()}`,
-      name: data.name,
-      phone: data.phone,
-      role: data.role,
-      verified: false,
-      rating: 0,
+    try {
+      const response = await api.register({
+        ...data,
+        preferredLanguage: "en",
+      })
+      if (response.success && response.user) {
+        setUser({
+          id: response.user.id,
+          name: response.user.name,
+          phone: response.user.phone,
+          email: response.user.email,
+          role: response.user.role,
+          verified: response.user.verified,
+          rating: 0,
+          preferredLanguage: response.user.preferredLanguage || "en",
+          verificationLevel: response.user.verificationLevel,
+        })
+        addNotification({
+          type: "system",
+          title: "Welcome to Matola!",
+          message: "Your account has been created. Complete verification to unlock all features.",
+          link: "/dashboard/verification",
+        })
+        showToast("Registration successful!", "success")
+        return true
+      }
+      showToast("Registration failed", "error")
+      return false
+    } catch (error: any) {
+      showToast(error.message || "Registration failed", "error")
+      return false
+    } finally {
+      setIsLoading(false)
     }
-
-    setUser(newUser)
-    localStorage.setItem("matola-user", JSON.stringify(newUser))
-    addNotification({
-      type: "system",
-      title: "Welcome to Matola!",
-      message: "Your account has been created. Complete verification to unlock all features.",
-      link: "/dashboard/verification",
-    })
-    setIsLoading(false)
-    return true
   }
 
-  const logout = () => {
-    setUser(null)
-    localStorage.removeItem("matola-user")
-  }
-
-  const userShipments = shipments.filter(
-    (s) => s.shipperId === user?.id || (user?.role === "shipper" && s.shipperId.startsWith("sh")),
-  )
-
-  const addShipment = async (shipmentData: Omit<Shipment, "id" | "createdAt" | "updatedAt">): Promise<Shipment> => {
-    await new Promise((resolve) => setTimeout(resolve, 1000))
-
-    const newShipment: Shipment = {
-      ...shipmentData,
-      id: `s${Date.now()}`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+  const logout = async () => {
+    try {
+      await api.logout()
+    } catch (error) {
+      // Client-side error logging
+      if (process.env.NODE_ENV === "development") {
+        console.error("Logout error:", error)
+      }
+    } finally {
+      setUser(null)
+      setShipments([])
+      setBids([])
+      clearTokens()
     }
-
-    setShipments((prev) => [newShipment, ...prev])
-    addNotification({
-      type: "shipment",
-      title: "Shipment Posted",
-      message: `Your shipment from ${shipmentData.origin.city} to ${shipmentData.destination.city} is now live`,
-      link: `/dashboard/shipments/${newShipment.id}`,
-    })
-
-    return newShipment
   }
 
-  const updateShipment = (id: string, updates: Partial<Shipment>) => {
-    setShipments((prev) => prev.map((s) => (s.id === id ? { ...s, ...updates, updatedAt: new Date() } : s)))
+  const userShipments = shipments.filter((s) => s.shipperId === user?.id)
+
+  const addShipment = async (
+    shipmentData: Omit<Shipment, "id" | "createdAt" | "updatedAt">,
+  ): Promise<Shipment> => {
+    try {
+      // Transform to API format
+      const apiData = {
+        originCity: shipmentData.origin.city,
+        originDistrict: shipmentData.origin.district,
+        originRegion: shipmentData.origin.region,
+        originLat: shipmentData.origin.coordinates?.lat,
+        originLng: shipmentData.origin.coordinates?.lng,
+        originLandmark: shipmentData.origin.landmark,
+        originAdmarc: shipmentData.origin.admarc,
+        destinationCity: shipmentData.destination.city,
+        destinationDistrict: shipmentData.destination.district,
+        destinationRegion: shipmentData.destination.region,
+        destinationLat: shipmentData.destination.coordinates?.lat,
+        destinationLng: shipmentData.destination.coordinates?.lng,
+        destinationLandmark: shipmentData.destination.landmark,
+        destinationAdmarc: shipmentData.destination.admarc,
+        cargoType: shipmentData.cargoType,
+        cargoDescription: shipmentData.cargoDescription,
+        cargoDescriptionNy: shipmentData.cargoDescriptionNy,
+        weight: shipmentData.weight,
+        length: shipmentData.dimensions?.length,
+        width: shipmentData.dimensions?.width,
+        height: shipmentData.dimensions?.height,
+        requiredVehicleType: shipmentData.requiredVehicleType,
+        pickupDate: shipmentData.pickupDate.toISOString(),
+        pickupTimeWindow: shipmentData.pickupTimeWindow,
+        price: shipmentData.price,
+        paymentMethod: shipmentData.paymentMethod,
+        isBackhaul: shipmentData.isBackhaul,
+        backhaulDiscount: shipmentData.backhaulDiscount,
+        specialInstructions: shipmentData.specialInstructions,
+        borderCrossingRequired: shipmentData.borderCrossing?.required || false,
+        borderPost: shipmentData.borderCrossing?.borderPost,
+        estimatedClearanceHours: shipmentData.borderCrossing?.estimatedClearanceHours,
+        seasonalCategory: shipmentData.seasonalCategory,
+      }
+
+      const created = await api.createShipment(apiData)
+
+      // Transform back to Shipment type
+      const newShipment: Shipment = {
+        ...shipmentData,
+        id: created.id,
+        shipperName: user?.name || "Unknown",
+        createdAt: new Date(created.createdAt),
+        updatedAt: new Date(created.updatedAt),
+      }
+
+      setShipments((prev) => [newShipment, ...prev])
+      addNotification({
+        type: "shipment",
+        title: "Shipment Posted",
+        message: `Your shipment from ${shipmentData.origin.city} to ${shipmentData.destination.city} is now live`,
+        link: `/dashboard/shipments/${newShipment.id}`,
+      })
+      showToast("Shipment posted successfully!", "success")
+
+      return newShipment
+    } catch (error: any) {
+      showToast(error.message || "Failed to create shipment", "error")
+      throw error
+    }
+  }
+
+  const updateShipment = async (id: string, updates: Partial<Shipment>): Promise<void> => {
+    try {
+      // Transform updates to API format
+      const apiUpdates: any = {}
+      if (updates.origin) {
+        apiUpdates.originCity = updates.origin.city
+        apiUpdates.originDistrict = updates.origin.district
+        apiUpdates.originRegion = updates.origin.region
+      }
+      if (updates.destination) {
+        apiUpdates.destinationCity = updates.destination.city
+        apiUpdates.destinationDistrict = updates.destination.district
+        apiUpdates.destinationRegion = updates.destination.region
+      }
+      if (updates.status) apiUpdates.status = updates.status
+      if (updates.price) apiUpdates.price = updates.price
+
+      await api.updateShipment(id, apiUpdates)
+      await refreshShipments()
+      showToast("Shipment updated successfully!", "success")
+    } catch (error: any) {
+      showToast(error.message || "Failed to update shipment", "error")
+    }
   }
 
   const getShipment = (id: string) => shipments.find((s) => s.id === id)
 
   const getBidsForShipment = (shipmentId: string) => bids.filter((b) => b.shipmentId === shipmentId)
 
-  const acceptBid = (bidId: string) => {
-    const bid = bids.find((b) => b.id === bidId)
-    if (!bid) return
+  const acceptBid = async (bidId: string): Promise<void> => {
+    try {
+      const bid = bids.find((b) => b.id === bidId)
+      if (!bid) return
 
-    setBids((prev) =>
-      prev.map((b) =>
-        b.id === bidId
-          ? { ...b, status: "accepted" }
-          : b.shipmentId === bid.shipmentId
-            ? { ...b, status: "rejected" }
-            : b,
-      ),
-    )
+      // Accept match (bid acceptance creates a match)
+      await api.acceptMatch(bidId)
 
-    updateShipment(bid.shipmentId, { status: "matched" })
+      setBids((prev) =>
+        prev.map((b) =>
+          b.id === bidId
+            ? { ...b, status: "accepted" }
+            : b.shipmentId === bid.shipmentId
+              ? { ...b, status: "rejected" }
+              : b,
+        ),
+      )
 
-    addNotification({
-      type: "shipment",
-      title: "Bid Accepted",
-      message: `You accepted ${bid.transporterName}'s bid for MK ${bid.proposedPrice.toLocaleString()}`,
-    })
+      await updateShipment(bid.shipmentId, { status: "matched" })
 
-    showToast("Bid accepted successfully!", "success")
+      addNotification({
+        type: "shipment",
+        title: "Bid Accepted",
+        message: `You accepted ${bid.transporterName}'s bid for MK ${bid.proposedPrice.toLocaleString()}`,
+      })
+
+      showToast("Bid accepted successfully!", "success")
+    } catch (error: any) {
+      showToast(error.message || "Failed to accept bid", "error")
+    }
   }
 
   const rejectBid = (bidId: string) => {
@@ -378,16 +520,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
     showToast("Bid rejected", "info")
   }
 
-  const submitBid = (bidData: Omit<Bid, "id" | "createdAt" | "status">) => {
-    const newBid: Bid = {
-      ...bidData,
-      id: `b${Date.now()}`,
-      status: "pending",
-      createdAt: new Date(),
-    }
+  const submitBid = async (bidData: Omit<Bid, "id" | "createdAt" | "status">) => {
+    try {
+      const submitted = await api.bids.submit({
+        shipmentId: bidData.shipmentId,
+        amount: bidData.proposedPrice,
+        message: bidData.message,
+        messageNy: bidData.messageNy,
+        estimatedPickup: bidData.estimatedPickup.toISOString(),
+      })
 
-    setBids((prev) => [...prev, newBid])
-    showToast("Bid submitted successfully!", "success")
+      const newBid: Bid = {
+        id: submitted.id,
+        shipmentId: submitted.shipmentId,
+        transporterId: submitted.transporterId,
+        transporterName: submitted.transporterName,
+        transporterRating: submitted.transporterRating,
+        proposedPrice: submitted.amount || submitted.proposedPrice,
+        message: submitted.message,
+        messageNy: submitted.messageNy,
+        estimatedPickup: submitted.estimatedPickup 
+          ? new Date(submitted.estimatedPickup) 
+          : bidData.estimatedPickup,
+        status: submitted.status,
+        createdAt: new Date(submitted.createdAt),
+      }
+
+      setBids((prev) => [...prev, newBid])
+      showToast("Bid submitted successfully!", "success")
+    } catch (error: any) {
+      showToast(error.message || "Failed to submit bid", "error")
+      throw error
+    }
   }
 
   const unreadCount = notifications.filter((n) => !n.read).length
@@ -427,20 +591,29 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }
 
-  const acceptLoadOffer = (shipmentId: string) => {
+  const acceptLoadOffer = async (shipmentId: string): Promise<void> => {
     if (!pendingLoadOffer || pendingLoadOffer.shipment.id !== shipmentId) return
 
-    // Update shipment status
-    updateShipment(shipmentId, { status: "matched" })
+    try {
+      // Find match for this shipment
+      const shipment = shipments.find((s) => s.id === shipmentId)
+      if (shipment) {
+        // Accept the match (would need match ID from API)
+        await updateShipment(shipmentId, { status: "matched" })
 
-    addNotification({
-      type: "shipment",
-      title: "Load Accepted",
-      message: `You've accepted the load from ${pendingLoadOffer.shipment.origin.city} to ${pendingLoadOffer.shipment.destination.city}`,
-      link: "/dashboard/transporter/my-jobs",
-    })
+        addNotification({
+          type: "shipment",
+          title: "Load Accepted",
+          message: `You've accepted the load from ${pendingLoadOffer.shipment.origin.city} to ${pendingLoadOffer.shipment.destination.city}`,
+          link: "/dashboard/transporter/my-jobs",
+        })
 
-    setPendingLoadOffer(null)
+        setPendingLoadOffer(null)
+        showToast("Load accepted successfully!", "success")
+      }
+    } catch (error: any) {
+      showToast(error.message || "Failed to accept load", "error")
+    }
   }
 
   const declineLoadOffer = (shipmentId: string) => {
@@ -463,6 +636,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         addShipment,
         updateShipment,
         getShipment,
+        refreshShipments,
         bids,
         getBidsForShipment,
         acceptBid,

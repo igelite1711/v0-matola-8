@@ -1,9 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createRateLimiter } from "@/lib/api/middleware/rate-limit"
 import { createValidator, isValidated } from "@/lib/api/middleware/validate"
-import { sendOtpSchema, type SendOtpInput } from "@/lib/api/schemas/auth"
+import { sendOtpSchema, type SendOtpInput } from "@/lib/validators/api-schemas"
 import { db } from "@/lib/api/services/db"
 import { createOTP, sendSMS } from "@/lib/api/services/otp"
+import { logger } from "@/lib/monitoring/logger"
 
 const validate = createValidator<SendOtpInput>(sendOtpSchema)
 
@@ -48,7 +49,10 @@ export async function POST(req: NextRequest) {
       phone: phone.replace(/(\+265\d{2})\d{4}(\d{4})/, "$1****$2"), // Mask phone
     })
   } catch (error) {
-    console.error("Send OTP error:", error)
+    logger.error("Send OTP error", {
+      phone: phone?.replace(/(\+265\d{2})\d{4}(\d{4})/, "$1****$2"),
+      error: error instanceof Error ? error.message : String(error),
+    })
     return NextResponse.json({ error: "Internal server error", code: "SERVER_ERROR" }, { status: 500 })
   }
 }

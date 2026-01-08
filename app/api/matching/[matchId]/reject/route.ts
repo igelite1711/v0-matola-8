@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from "next/server"
 import { generalRateLimiter } from "@/lib/api/middleware/rate-limit"
 import { authMiddleware, isAuthenticated } from "@/lib/api/middleware/auth"
 import { matchingApiService } from "@/lib/api/services/matching"
+import { logger } from "@/lib/monitoring/logger"
 
 /**
  * POST /api/matching/[matchId]/reject
@@ -36,7 +37,11 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mat
       matchId,
     })
   } catch (error) {
-    console.error("Reject match error:", error)
+    logger.error("Reject match error", {
+      matchId,
+      userId: authResult?.user?.userId,
+      error: error instanceof Error ? error.message : String(error),
+    })
     return NextResponse.json({ error: "Internal server error", code: "SERVER_ERROR" }, { status: 500 })
   }
 }

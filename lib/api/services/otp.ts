@@ -57,17 +57,15 @@ export async function verifyOTP(phone: string, code: string): Promise<boolean> {
 }
 
 export async function sendSMS(phone: string, message: string): Promise<boolean> {
-  // TODO: Integrate with Africa's Talking API
-  // For now, log to console in development
-  console.log(`[SMS] To: ${phone}, Message: ${message}`)
-
-  // Production implementation:
-  // const AT = require('africastalking')({
-  //   apiKey: process.env.AFRICASTALKING_API_KEY,
-  //   username: process.env.AFRICASTALKING_USERNAME
-  // })
-  // const sms = AT.SMS
-  // await sms.send({ to: [phone], message, from: 'MATOLA' })
-
-  return true
+  // Use the SMS service from notifications
+  try {
+    const { sendSMS: sendSMSNotification } = await import("@/lib/notifications/sms-service")
+    return await sendSMSNotification(phone, message)
+  } catch (error) {
+    // Fallback: log in development
+    if (process.env.NODE_ENV === "development") {
+      console.log(`[SMS] To: ${phone}, Message: ${message}`)
+    }
+    return false
+  }
 }

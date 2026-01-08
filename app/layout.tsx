@@ -1,78 +1,69 @@
-import type React from "react"
-import type { Metadata, Viewport } from "next"
-import { Inter, Geist_Mono } from "next/font/google"
-import { Analytics } from "@vercel/analytics/next"
-import { LanguageProvider } from "@/contexts/language-context"
-import { AppProvider } from "@/contexts/app-context"
-import { ToastNotification } from "@/components/ui/toast-notification"
-import { ServiceWorkerRegistration } from "@/components/pwa/service-worker-registration"
+import type { Metadata } from "next"
+import { Inter } from "next/font/google"
 import "./globals.css"
+import { AppProvider } from "@/contexts/app-context"
+import { LanguageProvider } from "@/contexts/language-context"
+import { Toaster } from "@/components/ui/sonner"
 
-const _inter = Inter({ subsets: ["latin"] })
-const _geistMono = Geist_Mono({ subsets: ["latin"] })
+const inter = Inter({ subsets: ["latin"] })
 
 export const metadata: Metadata = {
-  title: "Matola - Logistics for Malawi",
-  description: "Connect shippers with transporters. Reduce costs by 30% with backhaul optimization.",
-  generator: "v0.app",
+  title: "Matola Logistics Platform",
+  description: "Pan-African Logistics Platform - Connecting shippers and transporters",
   manifest: "/manifest.json",
+  themeColor: "#000000",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "Matola",
   },
-  formatDetection: {
-    telephone: true,
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+    maximumScale: 1,
+    userScalable: false,
   },
-  icons: {
-    icon: [
-      { url: "/icons/icon-32x32.png", sizes: "32x32", type: "image/png" },
-      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-    ],
-    apple: [
-      { url: "/icons/icon-152x152.png", sizes: "152x152", type: "image/png" },
-      { url: "/icons/icon-180x180.png", sizes: "180x180", type: "image/png" },
-    ],
-  },
-}
-
-export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#16a34a" },
-    { media: "(prefers-color-scheme: dark)", color: "#15803d" },
-  ],
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 5,
-  userScalable: true,
-  viewportFit: "cover",
 }
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode
-}>) {
+}) {
   return (
     <html lang="en">
       <head>
-        <link rel="apple-touch-icon" href="/icons/icon-180x180.png" />
+        <link rel="manifest" href="/manifest.json" />
+        <link rel="icon" href="/icon-192x192.png" />
+        <meta name="theme-color" content="#000000" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-        <meta name="mobile-web-app-capable" content="yes" />
-        {/* Preconnect to external resources */}
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Matola" />
       </head>
-      <body className="font-sans antialiased">
-        <AppProvider>
-          <LanguageProvider>
+      <body className={inter.className}>
+        <LanguageProvider>
+          <AppProvider>
             {children}
-            <ToastNotification />
-            <ServiceWorkerRegistration />
-          </LanguageProvider>
-        </AppProvider>
-        <Analytics />
+            <Toaster />
+          </AppProvider>
+        </LanguageProvider>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ('serviceWorker' in navigator) {
+                window.addEventListener('load', function() {
+                  navigator.serviceWorker.register('/sw.js')
+                    .then(function(registration) {
+                      console.log('ServiceWorker registration successful');
+                    })
+                    .catch(function(err) {
+                      console.log('ServiceWorker registration failed');
+                    });
+                });
+              }
+            `,
+          }}
+        />
       </body>
     </html>
   )
