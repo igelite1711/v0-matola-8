@@ -15,13 +15,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 8
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
       - run: pnpm install --frozen-lockfile
       - run: pnpm run lint
 
@@ -30,57 +30,35 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 8
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec tsc --noEmit
 
   test:
     name: Unit & Integration Tests
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: test
-          POSTGRES_PASSWORD: test
-          POSTGRES_DB: test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-      redis:
-        image: redis:7-alpine
-        options: >-
-          --health-cmd "redis-cli ping"
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 6379:6379
     env:
-      DATABASE_URL: postgresql://test:test@localhost:5432/test
+      DATABASE_URL: file:./tmp/test.db
       REDIS_URL: redis://localhost:6379
       JWT_SECRET: test-secret-key-for-ci
       JWT_REFRESH_SECRET: test-refresh-secret-key-for-ci
       NODE_ENV: test
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 8
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
+      - run: mkdir -p tmp
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec prisma generate
       - run: pnpm exec prisma migrate deploy
@@ -97,13 +75,13 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 8
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec playwright install --with-deps
       - run: pnpm run build
@@ -121,13 +99,13 @@ jobs:
     needs: [lint, type-check, test]
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 8
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
       - run: pnpm install --frozen-lockfile
       - run: pnpm exec prisma generate
       - run: pnpm run build
@@ -143,13 +121,13 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v2
-        with:
-          version: 8
       - uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 8
       - run: pnpm install --frozen-lockfile
       - name: Deploy to production
         run: |
