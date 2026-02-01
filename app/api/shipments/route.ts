@@ -1,183 +1,98 @@
-/**
- * GET /api/shipments - List shipments
- * POST /api/shipments - Create shipment
- */
+import { type NextRequest, NextResponse } from "next/server"
+import { generalRateLimiter } from "@/lib/api/middleware/rate-limit"
+import { authMiddleware, isAuthenticated } from "@/lib/api/middleware/auth"
+import { createValidator, isValidated } from "@/lib/api/middleware/validate"
+import { createShipmentSchema, shipmentQuerySchema, type CreateShipmentInput } from "@/lib/api/schemas/shipment"
+import { db } from "@/lib/api/services/db"
 
-import { NextRequest, NextResponse } from "next/server"
-import { z } from "zod"
-import { prisma } from "@/lib/db/prisma"
-import { requireAuth } from "@/lib/auth/middleware"
-import { checkGeneralRateLimit, createRateLimitHeaders } from "@/lib/rate-limit/rate-limiter"
-import { logger } from "@/lib/monitoring/logger"
-import { createShipmentSchema, getShipmentsSchema } from "@/lib/validators/api-schemas"
+const validateCreate = createValidator<CreateShipmentInput>(createShipmentSchema)
 
-export async function GET(request: NextRequest) {
+export async function GET(req: NextRequest) {
+  const startTime = Date.now()
+
+  // Rate limiting
+  const rateLimitError = await generalRateLimiter(req)
+  if (rateLimitError) return rateLimitError
+
   try {
-    const auth = await requireAuth(request)
-    const { searchParams } = new URL(request.url)
-
-    // Validate query parameters
-    const params = getShipmentsSchema.parse({
-      status: searchParams.get("status"),
-      limit: searchParams.get("limit"),
-      offset: searchParams.get("offset"),
-      originCity: searchParams.get("originCity"),
-      destinationCity: searchParams.get("destinationCity"),
-      cargoType: searchParams.get("cargoType"),
+    // Parse query params
+    const url = new URL(req.url)
+    const query = shipmentQuerySchema.parse({
+      status: url.searchParams.get("status") || undefined,
+      origin: url.searchParams.get("origin") || undefined,
+      destination: url.searchParams.get("destination") || undefined,
+      date_from: url.searchParams.get("date_from") || undefined,
+      date_to: url.searchParams.get("date_to") || undefined,
+      page: url.searchParams.get("page") || 1,
+      limit: url.searchParams.get("limit") || 20,
     })
 
-    const where: any = {}
+    const result = await db.getShipments(query)
 
-    // Filter by role
-    if (auth.role === "shipper") {
-      where.shipperId = auth.userId
-    } else if (auth.role === "transporter") {
-      where.status = "posted" // Only show available shipments
-    }
+    const responseTime = Date.now() - startTime
 
-    if (params.status) {
-      where.status = params.status
-    }
-    if (params.originCity) {
-      where.originCity = params.originCity
-    }
-    if (params.destinationCity) {
-      where.destinationCity = params.destinationCity
-    }
-    if (params.cargoType) {
-      where.cargoType = params.cargoType
-    }
-
-    const shipments = await prisma.shipment.findMany({
-      where,
-      include: {
-        shipper: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            rating: true,
-            verified: true,
-          },
-        },
-        matches: {
-          where: { transporterId: auth.userId },
-          take: 1,
+    return NextResponse.json(
+      {
+        ...result,
+        responseTime: `${responseTime}ms`,
+      },
+      {
+        headers: {
+          "X-Response-Time": `${responseTime}ms`,
+          "Cache-Control": "public, max-age=30", // Cache for 30 seconds
         },
       },
-      orderBy: { createdAt: "desc" },
-      take: params.limit,
-      skip: params.offset,
-    })
-
-    const total = await prisma.shipment.count({ where })
-
-    return NextResponse.json({
-      shipments,
-      pagination: {
-        total,
-        limit: params.limit,
-        offset: params.offset,
-        hasMore: params.offset + params.limit < total,
-      },
-    })
-  } catch (error: unknown) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid query parameters", details: error.errors }, { status: 400 })
-    }
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-    logger.error("Get shipments error", { 
-      error: error instanceof Error ? error : undefined,
-      errorMessage: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
-    })
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+    )
+  } catch (error) {
+    console.error("Get shipments error:", error)
+    return NextResponse.json({ error: "Internal server error", code: "SERVER_ERROR" }, { status: 500 })
   }
 }
 
-export async function POST(request: NextRequest) {
-  const requestId = request.headers.get("X-Request-ID") || `req_${Date.now()}`
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0] || "unknown"
+export async function POST(req: NextRequest) {
+  // Rate limiting
+  const rateLimitError = await generalRateLimiter(req)
+  if (rateLimitError) return rateLimitError
+
+  // Auth
+  const authResult = await authMiddleware(req)
+  if (!isAuthenticated(authResult)) return authResult
+
+  // Validation
+  const validationResult = await validateCreate(req)
+  if (!isValidated(validationResult)) return validationResult
+
+  const { user } = authResult
+  const data = validationResult.data
 
   try {
-    // Rate limiting
-    const rateLimit = await checkGeneralRateLimit(ip)
-    if (!rateLimit.allowed) {
-      return NextResponse.json(
-        { error: "Too many requests" },
-        { status: 429, headers: createRateLimitHeaders(rateLimit) },
-      )
+    // Only shippers can create shipments
+    if (user.role !== "shipper" && user.role !== "admin") {
+      return NextResponse.json({ error: "Only shippers can create shipments", code: "FORBIDDEN" }, { status: 403 })
     }
 
-    // Require shipper role
-    const auth = await requireAuth(request)
-    if (auth.role !== "shipper") {
-      return NextResponse.json({ error: "Only shippers can create shipments" }, { status: 403 })
-    }
-
-    // Parse and validate
-    const body = await request.json()
-    const validated = createShipmentSchema.parse(body)
-
-    // Generate reference
-    const reference = `ML${Date.now().toString().slice(-6)}`
-
-    // Create shipment
-    const shipment = await prisma.shipment.create({
-      data: {
-        shipperId: auth.userId,
-        reference,
-        ...validated,
-        pickupDate: new Date(validated.pickupDate),
-        status: "posted",
-      },
-      include: {
-        shipper: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            rating: true,
-          },
-        },
-      },
+    const shipment = await db.createShipment({
+      ...data,
+      shipper_id: user.userId,
+      departure_date: new Date(data.departure_date).toISOString(),
     })
 
-    logger.info("Shipment created", { requestId, shipmentId: shipment.id, shipperId: auth.userId })
+    // TODO: Trigger background matching job
+    // await matchingQueue.add('findMatches', { shipmentId: shipment.id })
 
-    // Trigger matching in background
-    const { matchingQueue } = await import("@/lib/queue/queue")
-    await matchingQueue.add(
-      "match-shipment",
-      {
-        shipmentId: shipment.id,
-        priority: "normal",
-      },
-      {
-        jobId: `match-${shipment.id}`,
-        attempts: 3,
-      },
-    )
-
-    return NextResponse.json(
-      { success: true, shipment },
-      { status: 201, headers: createRateLimitHeaders(rateLimit) },
-    )
-  } catch (error: unknown) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: "Invalid request data", details: error.errors }, { status: 400 })
-    }
-    if (error instanceof Error && error.message === "Unauthorized") {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
-    logger.error("Create shipment error", {
-      requestId,
-      error: error instanceof Error ? error : undefined,
-      errorMessage: error instanceof Error ? error.message : String(error),
-      stack: error instanceof Error ? error.stack : undefined,
+    // Audit log
+    await db.createAuditLog({
+      user_id: user.userId,
+      action: "create",
+      entity: "shipment",
+      entity_id: shipment.id,
+      changes: data,
+      ip_address: req.headers.get("x-forwarded-for") || undefined,
     })
-    return NextResponse.json({ error: "Internal server error" }, { status: 500 })
+
+    return NextResponse.json(shipment, { status: 201 })
+  } catch (error) {
+    console.error("Create shipment error:", error)
+    return NextResponse.json({ error: "Internal server error", code: "SERVER_ERROR" }, { status: 500 })
   }
 }

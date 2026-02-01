@@ -47,15 +47,7 @@ export function LoginForm() {
 
     const pinString = pin.join("")
     const roleParam = searchParams.get("role") as UserRole | null
-    
-    // Format phone: convert 0999123456 to +265999123456
-    const formattedPhone = phone.startsWith("0") 
-      ? `+265${phone.slice(1)}` 
-      : phone.includes("265") 
-        ? phone.startsWith("+") ? phone : `+${phone}`
-        : `+265${phone}`
-    
-    const success = await login(formattedPhone, pinString, roleParam || undefined)
+    const success = await login(phone, pinString, roleParam || undefined)
 
     if (success) {
       showToast("Login successful! Welcome back.", "success")
@@ -84,9 +76,7 @@ export function LoginForm() {
   }
 
   const handleQuickLogin = (demoPhone: string, role: UserRole) => {
-    // Format: 0999123456 -> 9991234456 (without leading 0)
-    const formatted = demoPhone.startsWith("0") ? demoPhone.slice(1) : demoPhone
-    setPhone(formatted)
+    setPhone(demoPhone)
     setPin(["1", "2", "3", "4"])
   }
 

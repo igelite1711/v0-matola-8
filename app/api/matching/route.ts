@@ -4,7 +4,6 @@ import { authMiddleware, isAuthenticated } from "@/lib/api/middleware/auth"
 import { matchingApiService } from "@/lib/api/services/matching"
 import type { TransporterCandidate } from "@/lib/matching-service"
 import type { Shipment } from "@/lib/types"
-import { logger } from "@/lib/monitoring/logger"
 
 /**
  * POST /api/matching
@@ -51,9 +50,7 @@ export async function POST(req: NextRequest) {
       },
     })
   } catch (error) {
-    logger.error("Matching error", {
-      error: error instanceof Error ? error.message : String(error),
-    })
+    console.error("Matching error:", error)
     return NextResponse.json({ error: "Internal server error", code: "SERVER_ERROR" }, { status: 500 })
   }
 }
@@ -94,11 +91,7 @@ export async function GET(req: NextRequest) {
       total: matches.length,
     })
   } catch (error) {
-    logger.error("Get matches error", {
-      userId: authResult?.user?.userId,
-      shipmentId: searchParams.get("shipmentId"),
-      error: error instanceof Error ? error.message : String(error),
-    })
+    console.error("Get matches error:", error)
     return NextResponse.json({ error: "Internal server error", code: "SERVER_ERROR" }, { status: 500 })
   }
 }

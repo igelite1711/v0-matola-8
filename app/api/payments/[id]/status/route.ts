@@ -2,7 +2,6 @@ import { type NextRequest, NextResponse } from "next/server"
 import { generalRateLimiter } from "@/lib/api/middleware/rate-limit"
 import { authMiddleware, isAuthenticated } from "@/lib/api/middleware/auth"
 import { db } from "@/lib/api/services/db"
-import { logger } from "@/lib/monitoring/logger"
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
@@ -38,11 +37,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       created_at: payment.created_at,
     })
   } catch (error) {
-    logger.error("Get payment status error", {
-      paymentId: id,
-      userId: authResult?.user?.userId,
-      error: error instanceof Error ? error.message : String(error),
-    })
+    console.error("Get payment status error:", error)
     return NextResponse.json({ error: "Internal server error", code: "SERVER_ERROR" }, { status: 500 })
   }
 }

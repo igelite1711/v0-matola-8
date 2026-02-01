@@ -36,11 +36,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ mat
       matchId,
     })
   } catch (error) {
-    const { logger } = await import("@/lib/monitoring/logger")
-    logger.error("Accept match error", {
-      matchId,
-      error: error instanceof Error ? error.message : String(error),
-    })
+    console.error("Accept match error:", error)
     return NextResponse.json({ error: "Internal server error", code: "SERVER_ERROR" }, { status: 500 })
   }
 }

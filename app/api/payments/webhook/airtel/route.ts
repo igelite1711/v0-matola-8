@@ -2,7 +2,6 @@ import { type NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/api/services/db"
 import { verifyAirtelWebhookSignature } from "@/lib/payments/airtel-money"
 import { getEscrowByShipment } from "@/lib/payments/escrow-state-machine"
-import { logger } from "@/lib/monitoring/logger"
 
 const processedTransactions = new Set<string>()
 
@@ -11,7 +10,7 @@ export async function POST(req: NextRequest) {
   const signature = req.headers.get("x-airtel-signature") || ""
 
   if (!verifyAirtelWebhookSignature(rawBody, signature)) {
-    logger.warn("Invalid Airtel webhook signature", { reference: payload?.reference })
+    console.error("Invalid Airtel webhook signature")
     await db.createAuditLog({
       action: "webhook_signature_failed",
       entity: "payment",
@@ -30,7 +29,7 @@ export async function POST(req: NextRequest) {
 
     const idempotencyKey = `airtel:${transactionId}:${status}`
     if (processedTransactions.has(idempotencyKey)) {
-      logger.info("Duplicate Airtel webhook ignored", { idempotencyKey, reference })
+      console.log("Duplicate webhook ignored:", idempotencyKey)
       return NextResponse.json({ received: true, duplicate: true })
     }
     processedTransactions.add(idempotencyKey)
@@ -44,7 +43,7 @@ export async function POST(req: NextRequest) {
     // Find payment by reference
     const payment = await db.getPaymentByReference(reference)
     if (!payment) {
-      logger.warn("Payment not found for Airtel webhook reference", { reference, transactionId })
+      console.error("Payment not found for reference:", reference)
       return NextResponse.json({ error: "Payment not found", code: "NOT_FOUND" }, { status: 404 })
     }
 
@@ -68,7 +67,7 @@ export async function POST(req: NextRequest) {
       const escrow = getEscrowByShipment(payment.shipment_id)
       if (escrow) {
         // Payment confirmed, escrow remains in pending until transporter accepts
-        logger.info("Payment confirmed for escrow", { escrowId: escrow.id, paymentId: payment.id })
+        console.log(`Payment confirmed for escrow ${escrow.id}`)
       }
 
       // Update shipment payment status
@@ -92,10 +91,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    logger.error("Airtel webhook error", {
-      error: error instanceof Error ? error.message : String(error),
-      reference: payload?.reference,
-    })
+    console.error("Airtel webhook error:", error)
     return NextResponse.json({ error: "Webhook processing failed", code: "PROCESSING_ERROR" }, { status: 500 })
   }
 }

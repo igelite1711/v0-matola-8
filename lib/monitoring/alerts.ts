@@ -178,88 +178,21 @@ class AlertingService {
   }
 
   private async sendSMSAlert(alert: Alert): Promise<void> {
-    try {
-      // Get admin phone numbers from environment or database
-      const adminPhones = process.env.ALERT_ADMIN_PHONES?.split(",") || []
-      
-      if (adminPhones.length === 0) {
-        logger.warn("No admin phones configured for SMS alerts", { alertId: alert.id })
-        return
-      }
-
-      const { sendSMS } = await import("@/lib/notifications/sms-service")
-      const message = `🚨 CRITICAL ALERT: ${alert.title}\n${alert.message}\nTime: ${alert.timestamp.toISOString()}`
-
-      // Send to all admin phones
-      const results = await Promise.allSettled(
-        adminPhones.map((phone) => sendSMS(phone.trim(), message))
-      )
-
-      const successCount = results.filter((r) => r.status === "fulfilled" && r.value).length
-      
-      logger.audit("SMS alert sent", {
-        alertId: alert.id,
-        severity: alert.severity,
-        title: alert.title,
-        recipients: adminPhones.length,
-        successful: successCount,
-      })
-    } catch (error) {
-      logger.error("Failed to send SMS alert", {
-        alertId: alert.id,
-        error: error instanceof Error ? error.message : String(error),
-      })
-    }
+    // TODO: Integrate with Africa's Talking SMS
+    logger.audit("SMS alert sent", {
+      alertId: alert.id,
+      severity: alert.severity,
+      title: alert.title,
+    })
   }
 
   private async sendEmailAlert(alert: Alert): Promise<void> {
-    try {
-      // Get admin email addresses from environment
-      const adminEmails = process.env.ALERT_ADMIN_EMAILS?.split(",") || []
-      
-      if (adminEmails.length === 0) {
-        logger.warn("No admin emails configured for email alerts", { alertId: alert.id })
-        return
-      }
-
-      // For now, log the email intent
-      // In production, integrate with SendGrid, AWS SES, or similar
-      const emailContent = {
-        to: adminEmails,
-        subject: `[${alert.severity.toUpperCase()}] ${alert.title}`,
-        html: `
-          <h2>${alert.title}</h2>
-          <p><strong>Severity:</strong> ${alert.severity}</p>
-          <p><strong>Message:</strong> ${alert.message}</p>
-          ${alert.metric ? `<p><strong>Metric:</strong> ${alert.metric}</p>` : ""}
-          ${alert.currentValue !== undefined ? `<p><strong>Current Value:</strong> ${alert.currentValue}</p>` : ""}
-          ${alert.threshold !== undefined ? `<p><strong>Threshold:</strong> ${alert.threshold}</p>` : ""}
-          <p><strong>Time:</strong> ${alert.timestamp.toISOString()}</p>
-          <p><a href="${process.env.NEXT_PUBLIC_APP_URL || "https://matola.mw"}/dashboard/admin/alerts">View in Dashboard</a></p>
-        `,
-        text: `${alert.title}\n\n${alert.message}\n\nSeverity: ${alert.severity}\nTime: ${alert.timestamp.toISOString()}`,
-      }
-
-      // TODO: In production, use actual email service
-      // Example with SendGrid:
-      // const sgMail = require('@sendgrid/mail')
-      // sgMail.setApiKey(process.env.SENDGRID_API_KEY)
-      // await sgMail.send(emailContent)
-
-      // For now, log the email intent
-      logger.audit("Email alert queued", {
-        alertId: alert.id,
-        severity: alert.severity,
-        title: alert.title,
-        recipients: adminEmails.length,
-        emails: adminEmails,
-      })
-    } catch (error) {
-      logger.error("Failed to send email alert", {
-        alertId: alert.id,
-        error: error instanceof Error ? error.message : String(error),
-      })
-    }
+    // TODO: Integrate with email service (SendGrid, SES, etc.)
+    logger.audit("Email alert sent", {
+      alertId: alert.id,
+      severity: alert.severity,
+      title: alert.title,
+    })
   }
 
   getActiveAlerts(): Alert[] {

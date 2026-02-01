@@ -2,25 +2,8 @@ import { type NextRequest, NextResponse } from "next/server"
 import { jwtVerify, SignJWT } from "jose"
 import crypto from "crypto"
 
-// Validate required environment variables at startup
-if (!process.env.JWT_SECRET) {
-  throw new Error(
-    "CRITICAL: JWT_SECRET environment variable is not set. " +
-    "This is required for token signing and must be consistent across server restarts. " +
-    "Set JWT_SECRET to a secure random string (minimum 32 characters) in your .env file."
-  )
-}
-
-if (!process.env.REFRESH_SECRET) {
-  throw new Error(
-    "CRITICAL: REFRESH_SECRET environment variable is not set. " +
-    "This is required for refresh token signing and must be consistent across server restarts. " +
-    "Set REFRESH_SECRET to a secure random string (minimum 32 characters) in your .env file."
-  )
-}
-
-const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET)
-const REFRESH_SECRET = new TextEncoder().encode(process.env.REFRESH_SECRET)
+const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex"))
+const REFRESH_SECRET = new TextEncoder().encode(process.env.REFRESH_SECRET || crypto.randomBytes(32).toString("hex"))
 const JWT_EXPIRY = "24h"
 const JWT_EXPIRY_SECONDS = 86400
 const REFRESH_EXPIRY = "7d"
@@ -42,7 +25,8 @@ export interface RefreshTokenPayload {
   exp?: number
 }
 
-import { tokenBlacklist as redisTokenBlacklist } from "@/lib/redis/client"
+// Token blacklist (use Redis in production)
+const tokenBlacklist = new Set<string>()
 
 export async function generateToken(payload: Omit<JWTPayload, "iat" | "exp">): Promise<string> {
   return await new SignJWT(payload as Record<string, unknown>)
@@ -64,9 +48,7 @@ export async function generateRefreshToken(userId: string): Promise<{ token: str
 
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
-    // Check if token is blacklisted in Redis
-    const isBlacklisted = await redisTokenBlacklist.isRevoked(token)
-    if (isBlacklisted) {
+    if (tokenBlacklist.has(token)) {
       return null
     }
     const { payload } = await jwtVerify(token, JWT_SECRET)
@@ -78,9 +60,7 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
 
 export async function verifyRefreshToken(token: string): Promise<RefreshTokenPayload | null> {
   try {
-    // Check if token is blacklisted in Redis
-    const isBlacklisted = await redisTokenBlacklist.isRevoked(token)
-    if (isBlacklisted) {
+    if (tokenBlacklist.has(token)) {
       return null
     }
     const { payload } = await jwtVerify(token, REFRESH_SECRET)
@@ -90,27 +70,8 @@ export async function verifyRefreshToken(token: string): Promise<RefreshTokenPay
   }
 }
 
-export async function blacklistToken(token: string): Promise<void> {
-  try {
-    // Get token expiry to set Redis TTL
-    const decoded = crypto.createHash("sha256").update(token).digest("hex")
-    try {
-      const payload = await jwtVerify(token, JWT_SECRET)
-      if (payload.exp) {
-        const expirySeconds = Math.max(0, payload.exp - Math.floor(Date.now() / 1000))
-        await redisTokenBlacklist.revoke(token, expirySeconds)
-      } else {
-        // Default to 24 hours if no expiry
-        await redisTokenBlacklist.revoke(token, JWT_EXPIRY_SECONDS)
-      }
-    } catch {
-      // If we can't decode the token, just use a default TTL
-      await redisTokenBlacklist.revoke(token, JWT_EXPIRY_SECONDS)
-    }
-  } catch (error) {
-    console.error("Failed to blacklist token:", error)
-    throw error
-  }
+export function blacklistToken(token: string): void {
+  tokenBlacklist.add(token)
 }
 
 export function getTokenExpirySeconds(): number {

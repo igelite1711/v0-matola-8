@@ -7,7 +7,8 @@ import { db } from "@/lib/api/services/db"
 import { initiateAirtelPayment } from "@/lib/payments/airtel-money"
 import { initiateTnmPayment } from "@/lib/payments/tnm-mpamba"
 import { createEscrow, checkDuplicatePayment } from "@/lib/payments/escrow-state-machine"
-import { logger } from "@/lib/monitoring/logger"
+import { idempotencyManager } from "@/lib/payment-idempotency"
+import { ResourceValidator } from "@/lib/request-validator"
 
 const validate = createValidator<InitiatePaymentInput>(initiatePaymentSchema)
 
@@ -34,21 +35,31 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Shipment not found", code: "NOT_FOUND" }, { status: 404 })
     }
 
-    // Verify user is the shipper
-    if (shipment.shipper_id !== user.userId && user.role !== "admin") {
+    // Verify user owns the shipment (using resource validator)
+    const hasOwnership = await ResourceValidator.validatePaymentOwnership(user.userId, shipment_id)
+    if (!hasOwnership && user.role !== "admin") {
       return NextResponse.json({ error: "Only the shipper can initiate payment", code: "FORBIDDEN" }, { status: 403 })
     }
 
-    const duplicateCheck = checkDuplicatePayment("", shipment_id)
-    if (duplicateCheck.isDuplicate) {
-      return NextResponse.json(
-        {
-          error: "Payment already exists for this shipment",
-          code: "DUPLICATE_PAYMENT",
-          existingEscrowId: duplicateCheck.existingEscrowId,
-        },
-        { status: 409 },
-      )
+    // Check idempotency
+    const idempotencyKey = idempotencyManager.generateKey({
+      userId: user.userId,
+      amount: shipment.price_mwk,
+      reference: shipment_id,
+    })
+
+    if (idempotencyManager.isDuplicate(idempotencyKey)) {
+      const cached = idempotencyManager.getCachedResult(idempotencyKey)
+      if (cached) {
+        return NextResponse.json(
+          {
+            error: "Duplicate payment request",
+            code: "DUPLICATE_REQUEST",
+            existingPaymentId: cached.paymentId,
+          },
+          { status: 409 },
+        )
+      }
     }
 
     // Create payment record
@@ -95,6 +106,9 @@ export async function POST(req: NextRequest) {
       })
     }
 
+    // Record idempotency key to prevent duplicate processing
+    idempotencyManager.recordPayment(idempotencyKey, payment.id)
+
     // Audit log
     await db.createAuditLog({
       user_id: user.userId,
@@ -107,6 +121,7 @@ export async function POST(req: NextRequest) {
         amount: shipment.price_mwk,
         escrow_id: escrow.id,
         provider_transaction: paymentResult.transactionId,
+        idempotency_key: idempotencyKey,
       },
       ip_address: req.headers.get("x-forwarded-for") || undefined,
     })
@@ -122,11 +137,7 @@ export async function POST(req: NextRequest) {
       ussd_prompt: paymentResult.ussdPrompt,
     })
   } catch (error) {
-    logger.error("Initiate payment error", {
-      userId: authResult?.user?.userId,
-      shipmentId: validationResult?.data?.shipmentId,
-      error: error instanceof Error ? error.message : String(error),
-    })
+    console.error("Initiate payment error:", error)
     return NextResponse.json({ error: "Internal server error", code: "SERVER_ERROR" }, { status: 500 })
   }
 }

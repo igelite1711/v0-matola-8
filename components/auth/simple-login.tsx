@@ -22,14 +22,7 @@ export function SimpleLogin() {
     e.preventDefault()
     setIsLoading(true)
 
-    // Format phone: convert 0999123456 to +265999123456
-    const formattedPhone = phone.startsWith("0") 
-      ? `+265${phone.slice(1)}` 
-      : phone.includes("265") 
-        ? phone.startsWith("+") ? phone : `+${phone}`
-        : `+265${phone}`
-
-    const success = await login(formattedPhone, pin)
+    const success = await login(phone, pin)
 
     if (success) {
       showToast("Welcome back!", "success")

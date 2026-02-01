@@ -1,10 +1,11 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createRateLimiter } from "@/lib/api/middleware/rate-limit"
 import { createValidator, isValidated } from "@/lib/api/middleware/validate"
-import { sendOtpSchema, type SendOtpInput } from "@/lib/validators/api-schemas"
+import { sendOtpSchema, type SendOtpInput } from "@/lib/api/schemas/auth"
 import { db } from "@/lib/api/services/db"
 import { createOTP, sendSMS } from "@/lib/api/services/otp"
-import { logger } from "@/lib/monitoring/logger"
+import { OTPRateLimiter } from "@/lib/request-validator"
+import { PhoneNormalizer } from "@/lib/phone-normalizer"
 
 const validate = createValidator<SendOtpInput>(sendOtpSchema)
 
@@ -31,28 +32,45 @@ export async function POST(req: NextRequest) {
   const validationResult = await validate(req)
   if (!isValidated(validationResult)) return validationResult
 
-  const { phone } = validationResult.data
+  let { phone } = validationResult.data
 
   try {
-    // Check if user exists
-    const user = await db.getUserByPhone(phone)
+    // Normalize phone number
+    const normalizedPhone = PhoneNormalizer.normalize(phone)
+
+    // Check OTP rate limiting (3 per 15 minutes)
+    if (!OTPRateLimiter.canRequestOTP(normalizedPhone)) {
+      const remaining = OTPRateLimiter.getRemainingAttempts(normalizedPhone)
+      return NextResponse.json(
+        {
+          error: `Too many OTP requests. Try again later.`,
+          code: "RATE_LIMIT_EXCEEDED",
+          remaining_attempts: remaining,
+        },
+        { status: 429 },
+      )
+    }
+
+    // Check if user exists (using normalized phone)
+    const user = await db.getUserByPhone(normalizedPhone)
     if (!user) {
       return NextResponse.json({ error: "User not found", code: "USER_NOT_FOUND" }, { status: 404 })
     }
 
+    // Record attempt
+    OTPRateLimiter.recordAttempt(normalizedPhone)
+
     // Generate and send OTP
-    const otp = await createOTP(phone)
-    await sendSMS(phone, `Your Matola login code is: ${otp}. Valid for 5 minutes.`)
+    const otp = await createOTP(normalizedPhone)
+    await sendSMS(normalizedPhone, `Your Matola login code is: ${otp}. Valid for 5 minutes.`)
 
     return NextResponse.json({
       message: "OTP sent successfully",
-      phone: phone.replace(/(\+265\d{2})\d{4}(\d{4})/, "$1****$2"), // Mask phone
+      phone: normalizedPhone.replace(/(\+265\d{2})\d{4}(\d{4})/, "$1****$2"), // Mask phone
+      remaining_attempts: OTPRateLimiter.getRemainingAttempts(normalizedPhone),
     })
   } catch (error) {
-    logger.error("Send OTP error", {
-      phone: phone?.replace(/(\+265\d{2})\d{4}(\d{4})/, "$1****$2"),
-      error: error instanceof Error ? error.message : String(error),
-    })
+    console.error("Send OTP error:", error)
     return NextResponse.json({ error: "Internal server error", code: "SERVER_ERROR" }, { status: 500 })
   }
 }

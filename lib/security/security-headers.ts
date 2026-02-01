@@ -60,25 +60,15 @@ export function applyCORSHeaders(
   config: SecurityHeadersConfig = {},
 ): NextResponse {
   const origin = request.headers.get("origin") || ""
+  const allowedOrigins = config.allowedOrigins || [
+    "https://matola.mw",
+    "https://app.matola.mw",
+    "https://admin.matola.mw",
+  ]
 
-  // Get allowed origins from environment variable or use provided config
-  let allowedOrigins = config.allowedOrigins
-
-  if (!allowedOrigins) {
-    // Parse ALLOWED_ORIGINS from env var (comma-separated)
-    const envOrigins = process.env.ALLOWED_ORIGINS
-    allowedOrigins = envOrigins ? envOrigins.split(",").map((o) => o.trim()) : []
-  }
-
-  // Always add localhost in development
-  const isDev = config.isDevelopment ?? process.env.NODE_ENV === "development"
-  if (isDev) {
-    if (!allowedOrigins.includes("http://localhost:3000")) {
-      allowedOrigins.push("http://localhost:3000")
-    }
-    if (!allowedOrigins.includes("http://localhost:3001")) {
-      allowedOrigins.push("http://localhost:3001")
-    }
+  // Add localhost in development
+  if (config.isDevelopment || process.env.NODE_ENV === "development") {
+    allowedOrigins.push("http://localhost:3000", "http://localhost:3001")
   }
 
   if (allowedOrigins.includes(origin)) {

@@ -4,7 +4,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { authMiddleware, isAuthenticated } from "@/lib/api/middleware/auth"
 import { db } from "@/lib/api/services/db"
-import { logger } from "@/lib/monitoring/logger"
 
 export async function POST(req: NextRequest) {
   // Auth required (admin only)
@@ -73,11 +72,7 @@ export async function POST(req: NextRequest) {
       status: newStatus,
     })
   } catch (error) {
-    logger.error("Cash confirmation error", {
-      paymentId: body?.payment_id,
-      userId: user?.userId,
-      error: error instanceof Error ? error.message : String(error),
-    })
+    console.error("Cash confirmation error:", error)
     return NextResponse.json({ error: "Internal server error", code: "SERVER_ERROR" }, { status: 500 })
   }
 }

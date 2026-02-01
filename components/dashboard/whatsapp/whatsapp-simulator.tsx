@@ -24,7 +24,7 @@ const initialMessages: Message[] = [
     id: "1",
     sender: "bot",
     content:
-      "Muli bwanji! Takulandirani ku Matola.\n\nNditha kukuthandizani ndi:\n\n1. Tumiza katundu (Ship goods)\n2. Peza katundu (Find loads)\n3. Tsatani (Track shipment)\n4. Ndalama zanga (Balance)\n5. Nyengo ya malonda (Season info)\n\nLembani nambala kapena fotokozani chomwe mukufuna.",
+      "Muli bwanji! Takulandirani ku Matola.\n\nNditha kukuthandizani ndi:\n\n1. Tumiza katundu (Ship goods)\n2. Peza katundu (Find loads)\n3. Tsatani (Track shipment)\n4. Ndalama zanga (Balance)\n5. Nyengo ya malonda (Season info)\n6. Thandizo (Help)\n\nLembani nambala kapena fotokozani chomwe mukufuna.",
     timestamp: new Date(Date.now() - 60000),
     quickReplies: ["Tumiza katundu", "Peza katundu", "Tsatani", "Ndalama"],
   },
@@ -56,23 +56,29 @@ const botResponses: Record<string, { reply: string; quickReplies?: string[] }> =
     quickReplies: ["Chimanga", "Fodya", "Simenti", "Malonda"],
   },
   chimanga: {
-    reply: "Chimanga (Maize) - bwino!\n\nKulemera bwanji? (Weight in kg)\n\nExample: 5000",
-    quickReplies: ["1000 kg", "2000 kg", "5000 kg", "10000 kg"],
+    reply:
+      "Chimanga (Maize) - bwino!\n\nKulemera bwanji? (Weight in kg)\n\nMwatsimika zitsanzo:\n• 1,000 kg - MK 45,000\n• 2,000 kg - MK 75,000\n• 5,000 kg - MK 185,000\n• 10,000 kg - MK 360,000\n\nKapena lembani nambala yanu.",
+    quickReplies: ["1000 kg", "2000 kg", "5000 kg", "10000 kg", "Zina"],
   },
   "5000 kg": {
     reply:
-      "MTENGO WOYEMBEKEZEKA:\n━━━━━━━━━━━━━━━━\nLilongwe (Kanengo) → Blantyre (Limbe)\n\nChimanga - 5,000 kg\n\nMtengo: MK 185,000\n━━━━━━━━━━━━━━━━\n\nZikuphatikiza:\n✓ Insurance\n✓ GPS tracking\n✓ 24hr support\n\nNyengo ya Chimanga:\nApr-Jun = High demand!\n\nKodi mupeze oyendetsa?",
+      "🏆 MTENGO WOYEMBEKEZEKA:\n━━━━━━━━━━━━━━━━\nLilongwe (Kanengo) → Blantyre (Limbe)\n\nChimanga - 5,000 kg\n\n💰 MTENGO: MK 185,000\n━━━━━━━━━━━━━━━━\n\n📦 ZIKUPHAKIRA:\n✓ Insurance (MK 5,000)\n✓ GPS Real-time tracking\n✓ 24hr Support\n✓ Safe delivery guarantee\n\n📈 NYENGO YA CHIMANGA:\nApr-Jun = HIGH DEMAND!\nMtengo wapachikha 30-40%\nZikupita mabwalo:\n• Lilongwe Auction Floors\n• Kasungu\n• Salima\n\n👥 MAPEPALA A OYENDETSA:\n2-4 drivers available panopa\n\nKodi mupeze oyendetsa?",
     quickReplies: ["Inde, pezani", "Sinthani", "Lepherani"],
   },
   "inde, pezani": {
     reply:
-      "Tikupeza oyendetsa otsimikizirika...\n\nTAPEZA 3:\n━━━━━━━━━━━━━━━━\n\n1. James Banda\nRating: 4.8 (156 reviews)\nVehicle: Canter BT-4521\nMtengo: MK 182,000\nRTOA Verified\nAvailable: Panopa\n\n2. Grace Phiri\nRating: 4.9 (89 reviews)\nVehicle: FUSO LL-7832\nMtengo: MK 185,000\nRTOA Verified\nAvailable: 2hrs\n\n3. Kondwani Chirwa\nRating: 4.4 (38 reviews)\nVehicle: Canter KU-5678\nMtengo: MK 178,000\nCommunity Verified\nAvailable: Mawa\n\nSankhani nambala:",
+      "Tikupeza oyendetsa otsimikizirika...\n\nTAPEZA 3 OMALISECHE:\n━━━━━━━━━━━━━━━━\n\n1️⃣ James Banda ⭐4.8\n   ✓ RTOA Verified\n   Vehicle: Canter BT-4521\n   Capacity: 5T\n   Mtengo: MK 182,000\n   Available: Panopa\n   Trips: 156 completed\n\n2️⃣ Grace Phiri ⭐4.9\n   ✓ RTOA Verified\n   Vehicle: FUSO LL-7832\n   Capacity: 7T\n   Mtengo: MK 185,000\n   Available: 2hrs\n   Trips: 89 completed\n\n3️⃣ Kondwani Chirwa ⭐4.4\n   ✓ Community Verified\n   Vehicle: Canter KU-5678\n   Capacity: 5T\n   Mtengo: MK 178,000\n   Available: Mawa\n   Trips: 38 completed\n\nKodi mwasankha ndi yani?",
     quickReplies: ["1", "2", "3", "Zambiri"],
   },
   "1": {
     reply:
-      'MWASANKHA JAMES BANDA!\n━━━━━━━━━━━━━━━━\n\nOrder ID: #MAT-7823\n\nDriver:\nJames Banda\nFoni: 0991 234 567\nPlate: BT 4521\n\nPickup:\nKanengo ADMARC, Lilongwe\nLero, 6:00 AM\n\nPayment:\nMK 182,000\nvia Airtel Money/Cash\n\nJames adzakuimbirani kutsimikizira pickup location.\n\nMutha kutsatira shipment yanu nthawi iliyonse:\n"Tsatani #MAT-7823"',
-    quickReplies: ["Tsatani shipment", "Imbani driver", "Menu"],
+      '✅ MWASANKHA JAMES BANDA!\n━━━━━━━━━━━━━━━━\n\nOrder ID: #MAT-7823\nStatus: CONFIRMED ✓\n\n👤 DRIVER INFO:\nJames Banda\n⭐ Rating: 4.8/5\n📞 Phone: 0991 234 567\n🚗 Vehicle: Canter BT-4521\n✓ RTOA Verified (License valid)\n🎖️ Badge: "Harvest Hero" (150+ trips)\n\n📍 PICKUP:\nKanengo ADMARC, Lilongwe\nLero, 6:00 AM\n\n💰 PRICE: MK 182,000\nPayment: Airtel Money / Cash\n\n📦 CARGO:\nChimanga - 5,000 kg\n\nJames adzakuimbirani kutsimikizira location.\n\nMutha kuimbira driver kapena kuthandizirika?',
+    quickReplies: ["Imbani driver", "Uthenga wa WhatsApp", "Menu", "Ponya order"],
+  },
+  "imbani driver": {
+    reply:
+      "📞 NUMBALA YA JAMES BANDA:\n\n0991 234 567\n\nDandikhulupirire kuti inu muli shipper wa:\n• Lilongwe (Kanengo ADMARC)\n• Destination: Blantyre\n• Cargo: Chimanga 5,000kg\n• Order: #MAT-7823\n\nJames adzakupemphani kudzamvetsera osati pa mtengo.",
+    quickReplies: ["Uthenga wa WhatsApp", "SMS", "Menu"],
   },
   peza: {
     reply: "Muli kuti panopa? (Current location)",
@@ -89,8 +95,8 @@ const botResponses: Record<string, { reply: string; quickReplies?: string[] }> =
   },
   backhaul: {
     reply:
-      "BACKHAUL - CHEPETSANI MTENGO!\n━━━━━━━━━━━━━━━━\n\nBackhaul ndi katundu wa kubwerera.\n\nMukapita LL→BT ndi chimanga,\nmutha kubwerera BT→LL ndi katundu\npa mtengo wotsika -40%!\n\nMosavuta:\n• Musayende chopanda kanthu\n• Mupeza ndalama zina\n• Shipper apeza mtengo wabwino\n\nPanopa pali 15 backhaul loads\nzomwe zikuyendera njira yanu!",
-    quickReplies: ["Peza backhaul", "Menu"],
+      "💰 BACKHAUL - CHEPETSANI MTENGO 40%!\n━━━━━━━━━━━━━━━━\n\nBackhaul = Return trip na shipment\n\nMWATICHIKA:\nLilongwe → Blantyre (MK 185,000)\n← Return: Blantyre → Lilongwe (MK 111,000) -40%!\n\nCHEPETSA: MK 74,000 pa njira imodzi!\n\nPali 15 backhaul loads:\n• Blantyre → Lilongwe (Electronics)\n• Blantyre → Mzuzu (Simenti)\n• Zomba → Kasungu (Feteleza)\n\nMutheketsa ndi backhaul shipment?",
+    quickReplies: ["Inde, pezani backhaul", "Njira imodzi", "Menu"],
   },
   tsatani: {
     reply: "Lowetsani Order ID yanu:\n\nExample: MAT-7823",
@@ -137,6 +143,11 @@ const botResponses: Record<string, { reply: string; quickReplies?: string[] }> =
     reply:
       "THANDIZO / HELP:\n━━━━━━━━━━━━━━━━\n\nImbani (Call):\n0888 MATOLA\n\nWhatsApp:\n0991 MATOLA\n\nEmail:\nhelp@matola.mw\n\nMaola a ntchito:\n6AM - 10PM tsiku lililonse\n\nEmergency (24/7):\n0999 HELP MW\n\nOffices:\nLilongwe - Area 3\nBlantyre - Ginnery Corner\nMzuzu - Katoto",
     quickReplies: ["Fotokozani vuto", "FAQ", "Menu"],
+  },
+  weight: {
+    reply:
+      "📏 KUPIMA KULEMERA:\n━━━━━━━━━━━━━━━━\n\n1 MG (bag) ya chimanga = ~60kg\n1 MUDINI (drum) ya mafuta = ~200kg\n1 MKATE wa cement = 50kg\n1 MKATE wa feteleza = 50kg\n\nMUTHA KUGWIRITSA:\n• Digital scale (malonda)\n• Truck scale (mtengo)\n• Estimation (nthawi yomwayi)\n\nKulemera kwanu = ?\n\nMwatsimika zitsanzo:\n• 500 kg (MG 8)\n• 1,000 kg (MG 17)\n• 5,000 kg (Full truck)\n\nKapena lowetsani nambala yanu:",
+    quickReplies: ["500 kg", "1000 kg", "5000 kg", "Zina"],
   },
   default: {
     reply:

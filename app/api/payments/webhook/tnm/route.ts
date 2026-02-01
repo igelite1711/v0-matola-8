@@ -2,7 +2,6 @@ import { type NextRequest, NextResponse } from "next/server"
 import { db } from "@/lib/api/services/db"
 import { verifyTnmWebhookChecksum, type TnmWebhookPayload } from "@/lib/payments/tnm-mpamba"
 import { getEscrowByShipment } from "@/lib/payments/escrow-state-machine"
-import { logger } from "@/lib/monitoring/logger"
 
 const processedTransactions = new Set<string>()
 
@@ -11,7 +10,7 @@ export async function POST(req: NextRequest) {
     const payload: TnmWebhookPayload = await req.json()
 
     if (!verifyTnmWebhookChecksum(payload)) {
-      logger.warn("Invalid TNM webhook checksum", { reference: payload.reference })
+      console.error("Invalid TNM webhook checksum")
       await db.createAuditLog({
         action: "webhook_checksum_failed",
         entity: "payment",
@@ -25,7 +24,7 @@ export async function POST(req: NextRequest) {
 
     const idempotencyKey = `tnm:${transactionId}:${resultCode}`
     if (processedTransactions.has(idempotencyKey)) {
-      logger.info("Duplicate TNM webhook ignored", { idempotencyKey, reference })
+      console.log("Duplicate webhook ignored:", idempotencyKey)
       return NextResponse.json({ received: true, duplicate: true })
     }
     processedTransactions.add(idempotencyKey)
@@ -39,7 +38,7 @@ export async function POST(req: NextRequest) {
     // Find payment by reference
     const payment = await db.getPaymentByReference(reference)
     if (!payment) {
-      logger.warn("Payment not found for TNM webhook reference", { reference, transactionId })
+      console.error("Payment not found for reference:", reference)
       return NextResponse.json({ error: "Payment not found", code: "NOT_FOUND" }, { status: 404 })
     }
 
@@ -56,7 +55,7 @@ export async function POST(req: NextRequest) {
     if (resultCode === "0") {
       const escrow = getEscrowByShipment(payment.shipment_id)
       if (escrow) {
-        logger.info("Payment confirmed for escrow", { escrowId: escrow.id, paymentId: payment.id })
+        console.log(`Payment confirmed for escrow ${escrow.id}`)
       }
 
       await db.updateShipment(payment.shipment_id, {
@@ -79,10 +78,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ received: true })
   } catch (error) {
-    logger.error("TNM webhook error", {
-      error: error instanceof Error ? error.message : String(error),
-      reference: payload?.reference,
-    })
+    console.error("TNM webhook error:", error)
     return NextResponse.json({ error: "Webhook processing failed", code: "PROCESSING_ERROR" }, { status: 500 })
   }
 }

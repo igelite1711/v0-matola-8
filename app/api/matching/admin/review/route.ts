@@ -2,7 +2,6 @@ import { type NextRequest, NextResponse } from "next/server"
 import { generalRateLimiter } from "@/lib/api/middleware/rate-limit"
 import { authMiddleware, isAuthenticated } from "@/lib/api/middleware/auth"
 import { matchingApiService } from "@/lib/api/services/matching"
-import { logger } from "@/lib/monitoring/logger"
 
 /**
  * GET /api/matching/admin/review
@@ -35,10 +34,7 @@ export async function GET(req: NextRequest) {
       },
     })
   } catch (error) {
-    logger.error("Get pending reviews error", {
-      userId: authResult?.user?.userId,
-      error: error instanceof Error ? error.message : String(error),
-    })
+    console.error("Get pending reviews error:", error)
     return NextResponse.json({ error: "Internal server error", code: "SERVER_ERROR" }, { status: 500 })
   }
 }
@@ -85,11 +81,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(result)
   } catch (error) {
-    logger.error("Review match error", {
-      matchId: body?.matchId,
-      userId: authResult?.user?.userId,
-      error: error instanceof Error ? error.message : String(error),
-    })
+    console.error("Review match error:", error)
     return NextResponse.json({ error: "Internal server error", code: "SERVER_ERROR" }, { status: 500 })
   }
 }
