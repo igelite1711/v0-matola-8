@@ -361,23 +361,26 @@ model Dispute {
   id            String    @id @default(cuid())
   shipmentId    String
   shipment      Shipment  @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
-  
+
   raisedById    String
   raisedBy      User      @relation("DisputeRaisedBy", fields: [raisedById], references: [id])
-  
+
+  assignedToId  String?   // Support agent ID - INVARIANT: Must be assigned to resolve
+
   type          String    // DisputeType as string
   description   String
   voiceNoteUrl  String?
   images        String?   // JSON array of URLs
-  
-  status        String    @default("open") // DisputeStatus as string
-  resolution    String?
-  
+
+  status        String    @default("open") // INVARIANT: Cannot resolve without assignment
+  resolutionExplanation String? // INVARIANT: Required when status='resolved'
+
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
-  
+
   @@index([shipmentId])
   @@index([raisedById])
+  @@index([assignedToId])
   @@index([status])
 }
 
