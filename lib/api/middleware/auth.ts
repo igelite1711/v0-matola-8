@@ -42,8 +42,7 @@ export interface RefreshTokenPayload {
   exp?: number
 }
 
-// Token blacklist (use Redis in production)
-const tokenBlacklist = new Set<string>()
+import { tokenBlacklist as redisTokenBlacklist } from "@/lib/redis/client"
 
 export async function generateToken(payload: Omit<JWTPayload, "iat" | "exp">): Promise<string> {
   return await new SignJWT(payload as Record<string, unknown>)
@@ -65,7 +64,9 @@ export async function generateRefreshToken(userId: string): Promise<{ token: str
 
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
-    if (tokenBlacklist.has(token)) {
+    // Check if token is blacklisted in Redis
+    const isBlacklisted = await redisTokenBlacklist.isRevoked(token)
+    if (isBlacklisted) {
       return null
     }
     const { payload } = await jwtVerify(token, JWT_SECRET)
@@ -77,7 +78,9 @@ export async function verifyToken(token: string): Promise<JWTPayload | null> {
 
 export async function verifyRefreshToken(token: string): Promise<RefreshTokenPayload | null> {
   try {
-    if (tokenBlacklist.has(token)) {
+    // Check if token is blacklisted in Redis
+    const isBlacklisted = await redisTokenBlacklist.isRevoked(token)
+    if (isBlacklisted) {
       return null
     }
     const { payload } = await jwtVerify(token, REFRESH_SECRET)
@@ -87,8 +90,27 @@ export async function verifyRefreshToken(token: string): Promise<RefreshTokenPay
   }
 }
 
-export function blacklistToken(token: string): void {
-  tokenBlacklist.add(token)
+export async function blacklistToken(token: string): Promise<void> {
+  try {
+    // Get token expiry to set Redis TTL
+    const decoded = crypto.createHash("sha256").update(token).digest("hex")
+    try {
+      const payload = await jwtVerify(token, JWT_SECRET)
+      if (payload.exp) {
+        const expirySeconds = Math.max(0, payload.exp - Math.floor(Date.now() / 1000))
+        await redisTokenBlacklist.revoke(token, expirySeconds)
+      } else {
+        // Default to 24 hours if no expiry
+        await redisTokenBlacklist.revoke(token, JWT_EXPIRY_SECONDS)
+      }
+    } catch {
+      // If we can't decode the token, just use a default TTL
+      await redisTokenBlacklist.revoke(token, JWT_EXPIRY_SECONDS)
+    }
+  } catch (error) {
+    console.error("Failed to blacklist token:", error)
+    throw error
+  }
 }
 
 export function getTokenExpirySeconds(): number {
