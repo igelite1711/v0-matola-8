@@ -202,39 +202,43 @@ model Shipment {
   id                String    @id @default(cuid())
   userId            String
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  referenceNumber   String    @unique
+
+  referenceNumber   String    @unique // INVARIANT: Globally unique reference
   description       String
   cargoType         String    // Cargo type as string
-  weight            Int       // in kg
+  weight            Int       // in kg - INVARIANT: weight > 0
   estimatedValue    Float?
-  
-  pickupLocation    String
+
+  pickupLocation    String    // INVARIANT: origin != destination
   deliveryLocation  String
-  pickupDate        DateTime
-  deliveryDate      DateTime
-  
-  status            String    @default("draft") // ShipmentStatus as string
+  pickupDate        DateTime  // INVARIANT: >= today (enforced at app level)
+  deliveryDate      DateTime  // INVARIANT: >= pickupDate (enforced at app level)
+
+  status            String    @default("draft") // INVARIANT: Follows state machine, immutable after "completed"
   seasonalCategory  String?   // SeasonalCategory as string
-  
+
   // Pricing
-  quotedPrice       Float?
-  finalPrice        Float?
+  quotedPrice       Float?    // INVARIANT: > 0
+  finalPrice        Float?    // INVARIANT: > 0
   paymentMethod     String?   // PaymentMethod as string
-  
+
+  // INVARIANT: Soft delete for 2-year retention
+  deletedAt         DateTime?
+
   // Relationships
   matches           Match[]
   bids              Bid[]
   transactions      WalletTransaction[]
   ratings           Rating[]
   disputes          Dispute[]
-  
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
-  
+
   @@index([userId])
   @@index([status])
   @@index([cargoType])
+  @@index([deletedAt])
 }
 
 // ============================================
