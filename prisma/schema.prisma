@@ -491,14 +491,17 @@ model AuditLog {
   id          String    @id @default(cuid())
   userId      String?
   user        User?     @relation("UserAuditLogs", fields: [userId], references: [id], onDelete: SetNull)
-  action      String
+  action      String    // INVARIANT: All financial and admin actions logged
   resourceType String
   resourceId  String?
-  details     String?   // JSON details
+  details     String?   // JSON details - INVARIANT: Never includes API keys or passwords
   ipAddress   String?
-  
+
+  // INVARIANT: Immutable - retention required for 7 years (regulatory)
   createdAt   DateTime  @default(now())
-  
+
   @@index([userId])
   @@index([resourceType])
+  @@index([action])
+  @@index([createdAt]) // For 7-year retention queries
 }
