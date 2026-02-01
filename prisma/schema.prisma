@@ -18,24 +18,27 @@ datasource db {
 
 model User {
   id                String   @id @default(cuid())
-  phone             String   @unique
+  phone             String   @unique // INVARIANT: Every user has unique phone (E.164 format)
   name              String
   email             String?
   whatsapp          String?
-  pinHash           String   // bcrypt hashed PIN
+  pinHash           String   // bcrypt hashed PIN - INVARIANT: Never plaintext
   avatar            String?
-  role              String   // "shipper" | "transporter" | "broker" | "admin"
+  role              String   // INVARIANT: Exactly one role per user (shipper | transporter | broker | admin)
   rating            Float    @default(0)
   totalRatings      Int      @default(0)
   verified          Boolean  @default(false)
-  verificationLevel String   @default("none") // "none" | "phone" | "id" | "community" | "rtoa" | "full"
+  verificationLevel String   @default("none") // INVARIANT: Status can only increase (none → phone → id → community → rtoa → full)
   preferredLanguage String   @default("en") // "en" | "ny"
-  
+
   // Malawi-specific fields
   communityVouchers String?  // JSON string of user IDs who vouched
   chiefReference    String?  // JSON: { name, village, district }
   rtoaMembership    String?
-  
+
+  // INVARIANT: Soft delete - never permanently remove users
+  deletedAt         DateTime?
+
   // Relationships
   shipments         Shipment[]
   matches           Match[]
@@ -50,22 +53,24 @@ model User {
   userAchievements  UserAchievement[]
   leaderboardEntries LeaderboardEntry[]
   raisedDisputes    Dispute[] @relation("DisputeRaisedBy")
-  
+
   // Transporter-specific (nullable)
   transporterProfile TransporterProfile?
-  
+
   // Shipper-specific (nullable)
   shipperProfile    ShipperProfile?
-  
+
   // Broker-specific (nullable)
   brokerProfile     BrokerProfile?
-  
+
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
-  
+
+  @@unique([phone, deletedAt]) // Allow soft-deleted users to have same phone
   @@index([phone])
   @@index([role])
   @@index([verificationLevel])
+  @@index([deletedAt])
 }
 
 // ============================================
@@ -470,4 +475,3 @@ model AuditLog {
   @@index([userId])
   @@index([resourceType])
 }
-
