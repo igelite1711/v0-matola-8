@@ -1,58 +1,78 @@
-/**
- * CSRF Protection
- * PRD Requirement: CSRF tokens for state-changing operations
- */
+// CSRF (Cross-Site Request Forgery) Protection
+// Generates and validates CSRF tokens stored in Redis
+
 import crypto from "crypto"
-import { cookies } from "next/headers"
-import { type NextRequest, NextResponse } from "next/server"
+import { redis, cache } from "@/lib/redis/client"
 
-const CSRF_TOKEN_LENGTH = 32
-const CSRF_COOKIE_NAME = "__csrf_token"
-const CSRF_HEADER_NAME = "x-csrf-token"
-const CSRF_EXPIRY_SECONDS = 3600 // 1 hour
+const CSRF_TOKEN_EXPIRY = 3600 // 1 hour in seconds
+const CSRF_COOKIE_NAME = "csrf-token"
+const CSRF_HEADER_NAME = "X-CSRF-Token"
 
-export function generateCSRFToken(): string {
-  return crypto.randomBytes(CSRF_TOKEN_LENGTH).toString("hex")
+export interface CSRFTokenPayload {
+  token: string
+  createdAt: number
+  expiresAt: number
 }
 
-export async function setCSRFCookie(): Promise<string> {
-  const token = generateCSRFToken()
-  const cookieStore = await cookies()
-
-  cookieStore.set(CSRF_COOKIE_NAME, token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: CSRF_EXPIRY_SECONDS,
-    path: "/",
-  })
-
+export async function generateCSRFToken(): Promise<string> {
+  // Generate a secure random token
+  const token = crypto.randomBytes(32).toString("hex")
+  
+  // Store in Redis with expiry
+  const payload: CSRFTokenPayload = {
+    token,
+    createdAt: Date.now(),
+    expiresAt: Date.now() + CSRF_TOKEN_EXPIRY * 1000,
+  }
+  
+  await cache.set(`csrf:${token}`, payload, CSRF_TOKEN_EXPIRY)
+  
   return token
 }
 
-export async function validateCSRF(request: NextRequest): Promise<boolean> {
-  // Skip CSRF for GET, HEAD, OPTIONS
-  const method = request.method.toUpperCase()
-  if (["GET", "HEAD", "OPTIONS"].includes(method)) {
-    return true
-  }
-
-  const cookieStore = await cookies()
-  const cookieToken = cookieStore.get(CSRF_COOKIE_NAME)?.value
-  const headerToken = request.headers.get(CSRF_HEADER_NAME)
-
-  if (!cookieToken || !headerToken) {
-    return false
-  }
-
-  // Timing-safe comparison
+export async function validateCSRFToken(token: string): Promise<boolean> {
   try {
-    return crypto.timingSafeEqual(Buffer.from(cookieToken), Buffer.from(headerToken))
-  } catch {
+    if (!token) {
+      return false
+    }
+
+    // Check if token exists and is not expired
+    const payload = await cache.get<CSRFTokenPayload>(`csrf:${token}`)
+    
+    if (!payload) {
+      return false
+    }
+
+    // Token is valid - optionally consume it (one-time use)
+    // Uncomment if you want one-time use tokens:
+    // await redis.del(`csrf:${token}`)
+    
+    return true
+  } catch (error) {
+    console.error("CSRF token validation error:", error)
     return false
   }
 }
 
-export function csrfErrorResponse(): NextResponse {
-  return NextResponse.json({ error: "CSRF token invalid", code: "CSRF_ERROR" }, { status: 403 })
+export async function revokeCSRFToken(token: string): Promise<void> {
+  try {
+    await redis.del(`csrf:${token}`)
+  } catch (error) {
+    console.error("Failed to revoke CSRF token:", error)
+  }
+}
+
+export function getCSRFCookieName(): string {
+  return CSRF_COOKIE_NAME
+}
+
+export function getCSRFHeaderName(): string {
+  return CSRF_HEADER_NAME
+}
+
+// Middleware helper to check if request requires CSRF validation
+export function requiresCSRFValidation(method: string): boolean {
+  // State-changing operations require CSRF validation
+  const statelessMethods = ["GET", "HEAD", "OPTIONS"]
+  return !statelessMethods.includes(method.toUpperCase())
 }
