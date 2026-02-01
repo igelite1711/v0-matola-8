@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   images: {
     unoptimized: true,
   },
@@ -40,11 +37,11 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // Next.js requires unsafe-inline
+              "script-src 'self' 'unsafe-inline'", // Next.js requires unsafe-inline, unsafe-eval removed
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: blob: https:",
               "font-src 'self' https://fonts.gstatic.com",
-              "connect-src 'self' https: wss:",
+              "connect-src 'self' https: wss: https://api.airtel.africa https://openapi.tnm.co.mw",
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self'",

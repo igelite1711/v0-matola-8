@@ -111,3 +111,31 @@ export async function verifyAirtelMoneyPayment(
     return { success: false, status: "pending" }
   }
 }
+
+/**
+ * Verify Airtel Money webhook signature
+ * Uses HMAC-SHA256 for signature verification
+ */
+export function verifyAirtelWebhookSignature(payload: string, signature: string): boolean {
+  try {
+    const crypto = require("crypto")
+    const secret = process.env.AIRTEL_WEBHOOK_SECRET || ""
+
+    if (!secret) {
+      logger.warn("AIRTEL_WEBHOOK_SECRET not configured")
+      return false
+    }
+
+    const expectedSignature = crypto
+      .createHmac("sha256", secret)
+      .update(payload)
+      .digest("hex")
+
+    return expectedSignature === signature
+  } catch (error) {
+    logger.error("Webhook signature verification error", {
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return false
+  }
+}

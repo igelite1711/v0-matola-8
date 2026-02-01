@@ -1,59 +1,79 @@
-// OTP Service - In production, use Redis for storage and Africa's Talking for SMS
+// OTP Service - Uses Redis for persistent storage across server restarts
+
 import crypto from "crypto"
+import { cache } from "@/lib/redis/client"
 
 interface OTPEntry {
   code: string
   expiresAt: number
   attempts: number
+  createdAt: number
 }
 
-// In-memory store (use Redis in production)
-const otpStore = new Map<string, OTPEntry>()
-
-const OTP_EXPIRY_MS = 5 * 60 * 1000 // 5 minutes
+const OTP_EXPIRY_SECONDS = 5 * 60 // 5 minutes
 const MAX_ATTEMPTS = 3
 
 export function generateOTP(): string {
-  return crypto.randomInt(100000, 999999).toString()
+  return crypto.randomInt(1000, 9999).toString()
 }
 
 export async function createOTP(phone: string): Promise<string> {
-  const code = generateOTP()
-  otpStore.set(phone, {
-    code,
-    expiresAt: Date.now() + OTP_EXPIRY_MS,
-    attempts: 0,
-  })
-  return code
+  try {
+    const code = generateOTP()
+    const entry: OTPEntry = {
+      code,
+      expiresAt: Date.now() + OTP_EXPIRY_SECONDS * 1000,
+      attempts: 0,
+      createdAt: Date.now(),
+    }
+
+    // Store OTP in Redis with TTL
+    await cache.set(`otp:${phone}`, entry, OTP_EXPIRY_SECONDS)
+
+    return code
+  } catch (error) {
+    console.error("Failed to create OTP:", error)
+    throw error
+  }
 }
 
 export async function verifyOTP(phone: string, code: string): Promise<boolean> {
-  const entry = otpStore.get(phone)
+  try {
+    const entry = await cache.get<OTPEntry>(`otp:${phone}`)
 
-  if (!entry) {
+    if (!entry) {
+      return false
+    }
+
+    // Check if OTP has expired
+    if (Date.now() > entry.expiresAt) {
+      await cache.del(`otp:${phone}`)
+      return false
+    }
+
+    // Increment attempts
+    entry.attempts++
+
+    // Check if max attempts exceeded
+    if (entry.attempts > MAX_ATTEMPTS) {
+      await cache.del(`otp:${phone}`)
+      return false
+    }
+
+    // Check if code matches
+    if (entry.code !== code) {
+      // Update attempts in Redis
+      await cache.set(`otp:${phone}`, entry, OTP_EXPIRY_SECONDS)
+      return false
+    }
+
+    // Valid OTP - delete it to prevent reuse
+    await cache.del(`otp:${phone}`)
+    return true
+  } catch (error) {
+    console.error("Failed to verify OTP:", error)
     return false
   }
-
-  if (Date.now() > entry.expiresAt) {
-    otpStore.delete(phone)
-    return false
-  }
-
-  entry.attempts++
-
-  if (entry.attempts > MAX_ATTEMPTS) {
-    otpStore.delete(phone)
-    return false
-  }
-
-  if (entry.code !== code) {
-    otpStore.set(phone, entry)
-    return false
-  }
-
-  // Valid - remove OTP
-  otpStore.delete(phone)
-  return true
 }
 
 export async function sendSMS(phone: string, message: string): Promise<boolean> {
