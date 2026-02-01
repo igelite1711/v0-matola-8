@@ -443,3 +443,389 @@ export function validateRatingEligibility(shipmentStatus: string): void {
     )
   }
 }
+
+// ============================================
+// ENHANCED INVARIANT ENFORCEMENT
+// ============================================
+
+/**
+ * INVARIANT: User verification status can only increase, never decrease
+ * Progression: none → phone → id → community → rtoa → full
+ */
+export function validateVerificationProgression(
+  currentLevel: string,
+  newLevel: string,
+): void {
+  const levels = ["none", "phone", "id", "community", "rtoa", "full"]
+  const currentIndex = levels.indexOf(currentLevel)
+  const newIndex = levels.indexOf(newLevel)
+
+  if (currentIndex === -1 || newIndex === -1) {
+    throw new ApiError(
+      "Invalid verification level",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+
+  if (newIndex < currentIndex) {
+    throw new ApiError(
+      `Cannot downgrade verification from ${currentLevel} to ${newLevel}. Verification status can only increase.`,
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: Every payment must reference exactly one shipment
+ */
+export function validatePaymentShipmentReference(shipmentId: string | null): void {
+  if (!shipmentId) {
+    throw new ApiError(
+      "Payment must reference exactly one shipment",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: Every payment must have a globally unique reference
+ */
+export function validateUniquePaymentReference(existingReference: unknown): void {
+  if (existingReference) {
+    throw new ApiError(
+      "Payment reference must be globally unique",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: A transporter cannot have duplicate active matches for the same shipment
+ */
+export function validateNoDuplicateActiveMatches(
+  existingActiveMatch: unknown,
+  shipmentId: string,
+  transporterId: string,
+): void {
+  if (existingActiveMatch) {
+    throw new ApiError(
+      `Transporter ${transporterId} already has an active match for shipment ${shipmentId}`,
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: A transporter cannot accept two shipments with conflicting pickup dates
+ */
+export function validateNoScheduleConflict(
+  conflictingShipment: unknown,
+  pickupDate: Date,
+): void {
+  if (conflictingShipment) {
+    throw new ApiError(
+      `Schedule conflict detected. Transporter has another shipment scheduled for the same pickup date: ${pickupDate.toISOString()}`,
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: Match score must be deterministic for the same inputs
+ * This is enforced at matching algorithm level - checking here for consistency
+ */
+export function validateMatchScoreDeterminism(
+  score1: number,
+  score2: number,
+  tolerance: number = 0.01,
+): void {
+  if (Math.abs(score1 - score2) > tolerance) {
+    throw new ApiError(
+      "Match score calculation is not deterministic - same inputs must produce same score",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: Union-verified users must have corresponding union_verification record
+ */
+export function validateUnionVerificationRecord(
+  verificationMethod: string,
+  unionVerificationRecord: unknown,
+): void {
+  if (verificationMethod === "union" && !unionVerificationRecord) {
+    throw new ApiError(
+      "Union-verified users must have corresponding union verification record",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: In-person verification must include photo evidence
+ */
+export function validateInPersonVerificationPhotos(
+  verificationMethod: string,
+  photoUrl: string | null,
+): void {
+  if (verificationMethod === "in_person" && !photoUrl) {
+    throw new ApiError(
+      "In-person verification must include photo evidence",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: Verification timestamps must be monotonically increasing
+ */
+export function validateVerificationTimestampProgression(
+  previousTimestamp: Date,
+  newTimestamp: Date,
+): void {
+  if (newTimestamp < previousTimestamp) {
+    throw new ApiError(
+      "Verification timestamp cannot decrease. New timestamp must be after or equal to previous timestamp.",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: Payment release during dispute must be blocked
+ */
+export function validateNoPaymentReleaseDuringDispute(
+  disputeStatus: string,
+  attemptingRelease: boolean,
+): void {
+  if (attemptingRelease && ["open", "under_review"].includes(disputeStatus)) {
+    throw new ApiError(
+      "Payment cannot be released while dispute is open or under review",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: Shipment status transitions must follow the defined state machine
+ * Enhanced version with all valid transitions
+ */
+export function validateShipmentStatusTransitionEnhanced(
+  currentStatus: string,
+  newStatus: string,
+): void {
+  const validTransitions: Record<string, string[]> = {
+    draft: ["pending", "cancelled"],
+    pending: ["accepted", "rejected", "cancelled"],
+    accepted: ["in_transit", "cancelled"],
+    in_transit: ["completed", "failed"],
+    completed: [], // Terminal state - no further transitions
+    rejected: [], // Terminal state
+    cancelled: [], // Terminal state
+    failed: ["pending"], // Can retry from failed
+  }
+
+  // Once a shipment is marked completed, it can never transition to any other status
+  if (currentStatus === "completed") {
+    throw new ApiError(
+      "Cannot modify status of completed shipment. Completed shipments are immutable.",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+
+  const allowed = validTransitions[currentStatus] || []
+
+  if (!allowed.includes(newStatus)) {
+    throw new ApiError(
+      `Invalid shipment status transition from ${currentStatus} to ${newStatus}. Allowed transitions: ${allowed.join(", ")}`,
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: Once a match is marked completed, it can never be rejected or expired
+ */
+export function validateMatchStatusTransitionEnhanced(
+  currentStatus: string,
+  newStatus: string,
+): void {
+  const validTransitions: Record<string, string[]> = {
+    pending: ["accepted", "rejected", "expired"],
+    accepted: ["completed", "rejected"],
+    completed: [], // Terminal state - immutable after completion
+    rejected: [], // Terminal state
+    expired: [], // Terminal state
+  }
+
+  // Once a match is marked completed, it can never be rejected or expired
+  if (currentStatus === "completed") {
+    throw new ApiError(
+      "Cannot modify status of completed match. Status transitions must be irreversible after completion.",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+
+  const allowed = validTransitions[currentStatus] || []
+
+  if (!allowed.includes(newStatus)) {
+    throw new ApiError(
+      `Invalid match status transition from ${currentStatus} to ${newStatus}. Allowed: ${allowed.join(", ")}`,
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: Every shipment must have a globally unique reference
+ */
+export function validateUniqueShipmentReference(existingReference: unknown): void {
+  if (existingReference) {
+    throw new ApiError(
+      "Shipment reference must be globally unique",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: Every match must reference an existing shipment and transporter
+ */
+export function validateMatchReferences(shipment: unknown, transporter: unknown): void {
+  if (!shipment) {
+    throw new ApiError(
+      "Match must reference an existing shipment",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+
+  if (!transporter) {
+    throw new ApiError(
+      "Match must reference an existing transporter",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: Payments in escrow must never be double-released
+ */
+export function validateNoDoubleEscrowRelease(currentEscrowStatus: string): void {
+  if (currentEscrowStatus === "released") {
+    throw new ApiError(
+      "Payment has already been released from escrow. Cannot double-release.",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: Completed payments can never be refunded
+ */
+export function validateNoRefundForCompletedPayment(
+  status: string,
+  escrowStatus: string,
+  attemptingRefund: boolean,
+): void {
+  if (
+    attemptingRefund &&
+    status === "completed" &&
+    escrowStatus === "released"
+  ) {
+    throw new ApiError(
+      "Completed and released payments can never be refunded",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: Every dispute must reference exactly one shipment
+ */
+export function validateDisputeShipmentReference(shipmentId: string | null): void {
+  if (!shipmentId) {
+    throw new ApiError(
+      "Dispute must reference exactly one shipment",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: Disputes cannot be resolved without assignment to support agent
+ */
+export function validateDisputeAssignment(status: string, assignedToId: string | null): void {
+  if (status === "resolved" && !assignedToId) {
+    throw new ApiError(
+      "Disputes cannot be resolved without assignment to a support agent",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: Resolved disputes must have resolution explanation
+ */
+export function validateDisputeExplanation(status: string, explanation: string | null): void {
+  if (status === "resolved" && !explanation?.trim()) {
+    throw new ApiError(
+      "Resolved disputes must include a resolution explanation",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: A user can only rate another user once per shipment
+ */
+export function validateNoDuplicateRatings(
+  existingRating: unknown,
+  ratedById: string,
+  receiverId: string,
+  shipmentId: string,
+): void {
+  if (existingRating) {
+    throw new ApiError(
+      `User ${ratedById} has already rated user ${receiverId} for shipment ${shipmentId}`,
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
+
+/**
+ * INVARIANT: Ratings cannot be modified after submission
+ */
+export function validateRatingImmutability(existingRating: unknown): void {
+  if (existingRating) {
+    throw new ApiError(
+      "Ratings cannot be modified after submission. Ratings are immutable.",
+      errorCodes.VALIDATION_ERROR,
+      400,
+    )
+  }
+}
