@@ -331,20 +331,23 @@ model Rating {
   id              String    @id @default(cuid())
   shipmentId      String?
   shipment        Shipment? @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
-  
+
   ratedById       String
   ratedBy         User      @relation("UserRatings", fields: [ratedById], references: [id], onDelete: Cascade)
-  
+
   receiverId      String
   receiver        User      @relation("RatedBy", fields: [receiverId], references: [id], onDelete: Cascade)
-  
-  overallRating   Int       // 1-5
+
+  overallRating   Int       // INVARIANT: 1-5 inclusive, cannot modify after submission
   categoryRatings String?   // JSON: { punctuality: 5, communication: 4, ... }
   tags            String?   // JSON array string
   review          String?
-  
+
   createdAt       DateTime  @default(now())
-  
+  // NO updatedAt - INVARIANT: Ratings immutable after creation
+
+  // INVARIANT: Only rate completed shipments, only once per shipment, cannot rate yourself
+  @@unique([shipmentId, ratedById, receiverId])
   @@index([ratedById])
   @@index([receiverId])
   @@index([shipmentId])
