@@ -41,4 +41,3 @@ export const sendOtpSchema = z.object({
 export type RegisterInput = z.infer<typeof registerSchema>
 export type LoginInput = z.infer<typeof loginSchema>
 export type SendOtpInput = z.infer<typeof sendOtpSchema>
-

@@ -56,13 +56,13 @@ All 5 critical production readiness items have been successfully implemented:
 - `npm run db:seed:full` - Full database seed
 
 **Usage:**
-```bash
+\`\`\`bash
 # Generate migration from schema
 npm run db:migrate
 
 # Seed database
 npm run db:seed:full
-```
+\`\`\`
 
 ---
 
@@ -108,13 +108,13 @@ npm run db:seed:full
 - Histogram statistics (p50, p95, p99)
 
 **Usage:**
-```bash
+\`\`\`bash
 # Health check
 curl http://localhost:3000/api/health
 
 # Metrics
 curl http://localhost:3000/api/metrics
-```
+\`\`\`
 
 ---
 
@@ -149,13 +149,13 @@ curl http://localhost:3000/api/metrics
 
 ### 1. Install Dependencies
 
-```bash
+\`\`\`bash
 npm install
-```
+\`\`\`
 
 ### 2. Set Up Database
 
-```bash
+\`\`\`bash
 # Generate Prisma client
 npm run db:generate
 
@@ -164,37 +164,37 @@ npm run db:migrate
 
 # Seed database
 npm run db:seed:full
-```
+\`\`\`
 
 ### 3. Run Tests
 
-```bash
+\`\`\`bash
 # Unit & integration tests
 npm run test
 
 # E2E tests
 npm run test:e2e
-```
+\`\`\`
 
 ### 4. Start Development
 
-```bash
+\`\`\`bash
 # Start Next.js dev server
 npm run dev
 
 # Start background workers
 npm run workers:start
-```
+\`\`\`
 
 ### 5. Check Health
 
-```bash
+\`\`\`bash
 # Health check
 curl http://localhost:3000/api/health
 
 # Metrics
 curl http://localhost:3000/api/metrics
-```
+\`\`\`
 
 ---
 
@@ -209,12 +209,12 @@ curl http://localhost:3000/api/metrics
    - `JWT_REFRESH_SECRET`
 
 2. Update deployment step in `.github/workflows/ci.yml`:
-   ```yaml
+   \`\`\`yaml
    - name: Deploy to production
      run: |
        # Add your deployment commands
        # e.g., vercel --prod
-   ```
+   \`\`\`
 
 ### Monitoring
 
@@ -225,14 +225,14 @@ curl http://localhost:3000/api/metrics
 ### Database Migrations
 
 1. Run initial migration:
-   ```bash
+   \`\`\`bash
    npx prisma migrate dev --name init
-   ```
+   \`\`\`
 
 2. For production:
-   ```bash
+   \`\`\`bash
    npm run db:migrate:deploy
-   ```
+   \`\`\`
 
 ---
 

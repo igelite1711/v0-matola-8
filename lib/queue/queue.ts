@@ -71,4 +71,3 @@ export const notificationQueueEvents = new QueueEvents("notifications", {
 
 // Export Redis connection for other uses
 export { redisConnection }
-

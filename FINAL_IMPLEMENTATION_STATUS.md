@@ -168,4 +168,3 @@ All requested features are now implemented and ready for:
 ---
 
 *Implementation completed: December 2024*
-

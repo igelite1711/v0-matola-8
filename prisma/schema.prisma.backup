@@ -729,4 +729,3 @@ model AuditLog {
   @@index([resource])
   @@index([createdAt])
 }
-

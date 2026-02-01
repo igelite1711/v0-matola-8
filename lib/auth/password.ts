@@ -27,4 +27,3 @@ export async function verifyPin(pin: string, hash: string): Promise<boolean> {
 export function validatePinFormat(pin: string): boolean {
   return /^\d{4}$/.test(pin)
 }
-

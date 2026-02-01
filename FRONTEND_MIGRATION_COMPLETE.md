@@ -90,14 +90,14 @@ The frontend has been successfully updated to replace all localStorage-based aut
 ## 🔄 Data Flow
 
 ### Before (localStorage):
-```
+\`\`\`
 User Action → Update State → Save to localStorage
-```
+\`\`\`
 
 ### After (API):
-```
+\`\`\`
 User Action → API Call → Backend → Database → Response → Update State
-```
+\`\`\`
 
 ---
 
@@ -106,49 +106,49 @@ User Action → API Call → Backend → Database → Response → Update State
 ### Authentication Flow
 
 1. **Login:**
-   ```typescript
+   \`\`\`typescript
    const response = await api.login(phone, pin, role)
    // Sets tokens automatically
    // Updates user state
-   ```
+   \`\`\`
 
 2. **Token Verification:**
-   ```typescript
+   \`\`\`typescript
    // On app load
    const response = await api.verify()
    // Returns user data if token valid
-   ```
+   \`\`\`
 
 3. **Logout:**
-   ```typescript
+   \`\`\`typescript
    await api.logout()
    // Clears tokens
    // Clears user state
-   ```
+   \`\`\`
 
 ### Shipment Flow
 
 1. **Create Shipment:**
-   ```typescript
+   \`\`\`typescript
    const shipment = await api.createShipment(data)
    // Transforms frontend format → API format
    // Calls POST /api/shipments
    // Transforms API response → Frontend format
-   ```
+   \`\`\`
 
 2. **Update Shipment:**
-   ```typescript
+   \`\`\`typescript
    await api.updateShipment(id, updates)
    // Calls PATCH /api/shipments/[id]
    // Refreshes shipment list
-   ```
+   \`\`\`
 
 3. **Load Shipments:**
-   ```typescript
+   \`\`\`typescript
    const shipments = await api.getShipments()
    // Calls GET /api/shipments
    // Transforms API response → Frontend format
-   ```
+   \`\`\`
 
 ---
 
@@ -238,10 +238,10 @@ User Action → API Call → Backend → Database → Response → Update State
 
 Make sure these are set:
 
-```env
+\`\`\`env
 NEXT_PUBLIC_APP_URL=http://localhost:3000
 # Or your production URL
-```
+\`\`\`
 
 ---
 
@@ -301,4 +301,3 @@ The frontend is now fully integrated with the backend API:
 
 *Migration completed: December 2024*  
 *Frontend now uses backend API exclusively*
-

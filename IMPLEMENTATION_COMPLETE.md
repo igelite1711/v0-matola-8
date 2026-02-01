@@ -28,9 +28,9 @@ This document summarizes all the features that have been implemented to complete
 - Retry logic and error handling
 
 **Usage:**
-```bash
+\`\`\`bash
 npm run workers:start
-```
+\`\`\`
 
 ---
 
@@ -153,9 +153,9 @@ npm run workers:start
 - Added achievement enums
 
 **Usage:**
-```bash
+\`\`\`bash
 npm run db:seed  # Seed achievements
-```
+\`\`\`
 
 ---
 
@@ -201,10 +201,10 @@ npm run db:seed  # Seed achievements
 - `prisma/migrations/.gitkeep` - Migrations directory
 
 **Usage:**
-```bash
+\`\`\`bash
 npm run db:migrate  # Create and run migrations
 npm run db:generate # Generate Prisma client
-```
+\`\`\`
 
 **Schema Updates:**
 - Added Notification model
@@ -232,9 +232,9 @@ npm run db:generate # Generate Prisma client
 ## 🚀 SETUP INSTRUCTIONS
 
 ### 1. Install Dependencies
-```bash
+\`\`\`bash
 npm install
-```
+\`\`\`
 
 ### 2. Set Environment Variables
 Copy `env.example` to `.env` and fill in:
@@ -245,20 +245,20 @@ Copy `env.example` to `.env` and fill in:
 - Payment provider keys
 
 ### 3. Run Database Migrations
-```bash
+\`\`\`bash
 npm run db:migrate
 npm run db:seed  # Seed achievements
-```
+\`\`\`
 
 ### 4. Start Workers (Background Jobs)
-```bash
+\`\`\`bash
 npm run workers:start
-```
+\`\`\`
 
 ### 5. Start Development Server
-```bash
+\`\`\`bash
 npm run dev
-```
+\`\`\`
 
 ---
 
@@ -305,11 +305,11 @@ npm run dev
 
 ### Redis Configuration
 Update `.env`:
-```
+\`\`\`
 REDIS_HOST=localhost
 REDIS_PORT=6379
 REDIS_PASSWORD=
-```
+\`\`\`
 
 ### Worker Configuration
 Workers are configured in `lib/queue/queue.ts`:

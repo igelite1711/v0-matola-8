@@ -42,4 +42,3 @@ test.describe('Authentication Flow', () => {
     await expect(page.locator('text=/invalid|error/i')).toBeVisible()
   })
 })
-

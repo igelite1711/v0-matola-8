@@ -168,4 +168,3 @@ Added comprehensive security headers as required by MATOLA LOGISTICS PLATFORM sp
 ---
 
 *Audit completed: December 2024*
-

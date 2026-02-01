@@ -518,7 +518,7 @@ The MATOLA LOGISTICS PLATFORM is a **well-designed, feature-complete logistics p
 
 ## 📝 DETAILED SCORING BREAKDOWN
 
-```
+\`\`\`
 Feature Completeness:    9.0/10  (95% features implemented)
 Code Quality:           8.0/10  (Good structure, minor gaps)
 Architecture:           8.5/10  (Solid design, missing monitoring)
@@ -529,11 +529,10 @@ Testing:               4.0/10  (Critical gap)
 Security:              8.5/10  (Good fundamentals, needs audit)
 
 Weighted Average:       8.2/10
-```
+\`\`\`
 
 ---
 
 **Assessment Date:** December 2024  
 **Assessor:** AI Code Review System  
 **Next Review:** After critical items completion
-

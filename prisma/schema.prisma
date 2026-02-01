@@ -239,6 +239,14 @@ model Shipment {
   @@index([status])
   @@index([cargoType])
   @@index([deletedAt])
+  
+  // Database constraints for invariants
+  // Note: SQLite has limited CHECK support, these are documented for future PostgreSQL migration
+  // @@check("weight > 0", "weight_positive")
+  // @@check("quoted_price IS NULL OR quoted_price > 0", "quoted_price_positive")
+  // @@check("final_price IS NULL OR final_price > 0", "final_price_positive")
+  // @@check("pickup_location != delivery_location", "origin_destination_different")
+  // @@check("delivery_date >= pickup_date", "delivery_after_pickup")
 }
 
 // ============================================
@@ -256,15 +264,24 @@ model Match {
   status          String    @default("pending") // INVARIANT: Immutable after "completed"
   matchScore      Float     // INVARIANT: 0-100 range
   finalPrice      Float?    // INVARIANT: <= 150% of shipment price
+  
+  // Soft delete support (INVARIANT: no duplicate active matches)
+  deletedAt       DateTime?
 
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 
   // INVARIANT: No duplicate active matches for same (shipment, transporter) pair
-  @@unique([shipmentId, transporterId, status]) // Only enforces for specific status
+  @@unique([shipmentId, transporterId]) // Prevent duplicate matches
   @@index([shipmentId])
   @@index([transporterId])
   @@index([status])
+  @@index([deletedAt])
+  
+  // Database constraints for invariants
+  // Note: SQLite has limited CHECK support, these are documented for future PostgreSQL migration
+  // @@check("match_score >= 0 AND match_score <= 100", "match_score_range")
+  // @@check("final_price IS NULL OR final_price > 0", "final_price_positive")
 }
 
 // ============================================
@@ -310,6 +327,9 @@ model WalletTransaction {
   status      String    @default("pending") // INVARIANT: status transitions immutable after "completed"
   escrowStatus String   @default("none") // none | held | released - INVARIANT: Cannot double-release
   description String?
+  
+  // Idempotency key for preventing duplicate charges (INVARIANT)
+  idempotencyKey String? @unique // Unique key for idempotent requests
 
   // INVARIANT: Never hard-delete payments, soft-delete only
   deletedAt   DateTime?
@@ -321,6 +341,13 @@ model WalletTransaction {
   @@index([status])
   @@index([reference])
   @@index([deletedAt])
+  @@index([idempotencyKey])
+  
+  // Database constraints for invariants
+  // Note: SQLite has limited CHECK support, these are documented for future PostgreSQL migration
+  // @@check("amount > 0", "amount_positive")
+  // @@check("platform_fee <= (amount * 0.10)", "platform_fee_max_10_percent")
+  // @@check("abs(net_amount - (amount - platform_fee)) < 0.01", "net_amount_calculation")
 }
 
 // ============================================

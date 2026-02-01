@@ -13,7 +13,7 @@ The project uses:
 
 ### Unit & Integration Tests
 
-```bash
+\`\`\`bash
 # Run all tests once
 npm run test
 
@@ -25,28 +25,28 @@ npm run test:ui
 
 # Run tests with coverage
 npm run test:coverage
-```
+\`\`\`
 
 ### E2E Tests
 
-```bash
+\`\`\`bash
 # Run E2E tests
 npm run test:e2e
 
 # Run E2E tests with UI
 npm run test:e2e:ui
-```
+\`\`\`
 
 ### All Tests
 
-```bash
+\`\`\`bash
 # Run both unit and E2E tests
 npm run test:all
-```
+\`\`\`
 
 ## Test Structure
 
-```
+\`\`\`
 tests/
 ├── setup.ts                 # Test configuration and mocks
 ├── unit/                    # Unit tests
@@ -58,7 +58,7 @@ tests/
 └── e2e/                     # End-to-end tests
     ├── auth.spec.ts
     └── shipments.spec.ts
-```
+\`\`\`
 
 ## Writing Tests
 
@@ -67,7 +67,7 @@ tests/
 Unit tests test individual functions or utilities in isolation.
 
 Example:
-```typescript
+\`\`\`typescript
 import { describe, it, expect } from 'vitest'
 import { hashPin, verifyPin } from '@/lib/auth/password'
 
@@ -79,14 +79,14 @@ describe('Password Utilities', () => {
     expect(hash).not.toBe(pin)
   })
 })
-```
+\`\`\`
 
 ### Integration Tests
 
 Integration tests test API routes with database interactions.
 
 Example:
-```typescript
+\`\`\`typescript
 import { describe, it, expect } from 'vitest'
 import { NextRequest } from 'next/server'
 import { POST as registerHandler } from '@/app/api/auth/register/route'
@@ -110,14 +110,14 @@ describe('Auth API Integration Tests', () => {
     expect(data.user).toBeDefined()
   })
 })
-```
+\`\`\`
 
 ### E2E Tests
 
 E2E tests test the full user flow in a browser.
 
 Example:
-```typescript
+\`\`\`typescript
 import { test, expect } from '@playwright/test'
 
 test('should login with existing credentials', async ({ page }) => {
@@ -127,7 +127,7 @@ test('should login with existing credentials', async ({ page }) => {
   await page.click('button[type="submit"]')
   await expect(page).toHaveURL(/\/dashboard/)
 })
-```
+\`\`\`
 
 ## Test Configuration
 
@@ -174,4 +174,3 @@ Tests automatically run in CI/CD pipeline:
 1. Install Playwright browsers: `npx playwright install`
 2. Ensure dev server is running: `npm run dev`
 3. Check browser compatibility
-

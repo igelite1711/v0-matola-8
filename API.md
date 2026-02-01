@@ -12,7 +12,7 @@ The Matola Logistics Platform API uses JWT for authentication and follows REST c
 
 Register a new user account.
 
-```json
+\`\`\`json
 {
   "phone": "+265123456789",
   "name": "John Doe",
@@ -21,10 +21,10 @@ Register a new user account.
   "role": "shipper|transporter|broker",
   "preferredLanguage": "en|ny"
 }
-```
+\`\`\`
 
 Response: `201 Created`
-```json
+\`\`\`json
 {
   "success": true,
   "user": {
@@ -36,7 +36,7 @@ Response: `201 Created`
   "accessToken": "jwt_token_here",
   "refreshToken": "refresh_token_here"
 }
-```
+\`\`\`
 
 ### Login
 
@@ -44,22 +44,22 @@ Response: `201 Created`
 
 Login with phone and PIN.
 
-```json
+\`\`\`json
 {
   "phone": "+265123456789",
   "pin": "1234"
 }
-```
+\`\`\`
 
 Response: `200 OK`
-```json
+\`\`\`json
 {
   "success": true,
   "user": { ... },
   "accessToken": "jwt_token_here",
   "refreshToken": "refresh_token_here"
 }
-```
+\`\`\`
 
 ### Refresh Token
 
@@ -67,19 +67,19 @@ Response: `200 OK`
 
 Get a new access token using refresh token.
 
-```json
+\`\`\`json
 {
   "refreshToken": "refresh_token_here"
 }
-```
+\`\`\`
 
 Response: `200 OK`
-```json
+\`\`\`json
 {
   "success": true,
   "accessToken": "new_jwt_token_here"
 }
-```
+\`\`\`
 
 ### Logout
 
@@ -88,12 +88,12 @@ Response: `200 OK`
 Logout and invalidate tokens.
 
 Response: `200 OK`
-```json
+\`\`\`json
 {
   "success": true,
   "message": "Logged out successfully"
 }
-```
+\`\`\`
 
 ### Send OTP
 
@@ -101,19 +101,19 @@ Response: `200 OK`
 
 Send OTP code to phone number.
 
-```json
+\`\`\`json
 {
   "phone": "+265123456789"
 }
-```
+\`\`\`
 
 Response: `200 OK`
-```json
+\`\`\`json
 {
   "message": "OTP sent successfully",
   "phone": "+265****6789"
 }
-```
+\`\`\`
 
 ### Verify OTP
 
@@ -121,22 +121,22 @@ Response: `200 OK`
 
 Verify OTP code and login.
 
-```json
+\`\`\`json
 {
   "phone": "+265123456789",
   "otp": "123456"
 }
-```
+\`\`\`
 
 Response: `200 OK`
-```json
+\`\`\`json
 {
   "success": true,
   "user": { ... },
   "accessToken": "jwt_token_here",
   "refreshToken": "refresh_token_here"
 }
-```
+\`\`\`
 
 ## Shipments
 
@@ -157,7 +157,7 @@ Query Parameters:
 - `offset` - Pagination offset (default: 0)
 
 Response: `200 OK`
-```json
+\`\`\`json
 {
   "shipments": [
     {
@@ -180,7 +180,7 @@ Response: `200 OK`
     "hasMore": true
   }
 }
-```
+\`\`\`
 
 ### Create Shipment
 
@@ -188,7 +188,7 @@ Response: `200 OK`
 
 Create a new shipment (shipper only).
 
-```json
+\`\`\`json
 {
   "description": "Electronics shipment",
   "cargoType": "electronics",
@@ -199,10 +199,10 @@ Create a new shipment (shipper only).
   "pickupDate": "2025-01-05T08:00:00Z",
   "deliveryDate": "2025-01-06T18:00:00Z"
 }
-```
+\`\`\`
 
 Response: `201 Created`
-```json
+\`\`\`json
 {
   "success": true,
   "shipment": {
@@ -211,7 +211,7 @@ Response: `201 Created`
     ...
   }
 }
-```
+\`\`\`
 
 ### Get Shipment
 
@@ -220,11 +220,11 @@ Response: `201 Created`
 Get shipment details.
 
 Response: `200 OK`
-```json
+\`\`\`json
 {
   "shipment": { ... }
 }
-```
+\`\`\`
 
 ## Payments
 
@@ -234,17 +234,17 @@ Response: `200 OK`
 
 Initiate payment for a shipment.
 
-```json
+\`\`\`json
 {
   "shipmentId": "shipment_123",
   "amount": 25000,
   "method": "airtel_money|tnm_mpamba|cash|bank_transfer",
   "phoneNumber": "+265123456789"
 }
-```
+\`\`\`
 
 Response: `201 Created`
-```json
+\`\`\`json
 {
   "success": true,
   "transaction": {
@@ -256,7 +256,7 @@ Response: `201 Created`
   "ussdPrompt": "*787# → Send Money → ...",
   "instructions": "Dial the USSD code above to complete payment."
 }
-```
+\`\`\`
 
 ### Get Payments
 
@@ -265,12 +265,12 @@ Response: `201 Created`
 List payment transactions.
 
 Response: `200 OK`
-```json
+\`\`\`json
 {
   "transactions": [ ... ],
   "pagination": { ... }
 }
-```
+\`\`\`
 
 ## Notifications
 
@@ -281,7 +281,7 @@ Response: `200 OK`
 List user notifications.
 
 Response: `200 OK`
-```json
+\`\`\`json
 {
   "notifications": [
     {
@@ -295,7 +295,7 @@ Response: `200 OK`
   ],
   "pagination": { ... }
 }
-```
+\`\`\`
 
 ### Mark as Read
 
@@ -304,12 +304,12 @@ Response: `200 OK`
 Mark notification as read.
 
 Response: `200 OK`
-```json
+\`\`\`json
 {
   "success": true,
   "notification": { ... }
 }
-```
+\`\`\`
 
 ### Mark All as Read
 
@@ -318,12 +318,12 @@ Response: `200 OK`
 Mark all notifications as read.
 
 Response: `200 OK`
-```json
+\`\`\`json
 {
   "success": true,
   "count": 5
 }
-```
+\`\`\`
 
 ## Health & Status
 
@@ -334,7 +334,7 @@ Response: `200 OK`
 Get application health status.
 
 Response: `200 OK` (or `503` if unhealthy)
-```json
+\`\`\`json
 {
   "status": "healthy|degraded|unhealthy",
   "timestamp": "2025-01-01T10:00:00Z",
@@ -349,7 +349,7 @@ Response: `200 OK` (or `503` if unhealthy)
     "memory": { ... }
   }
 }
-```
+\`\`\`
 
 ### Readiness Check
 
@@ -358,7 +358,7 @@ Response: `200 OK` (or `503` if unhealthy)
 Check if services are ready to handle requests.
 
 Response: `200 OK` (or `503` if not ready)
-```json
+\`\`\`json
 {
   "status": "ready|not_ready",
   "timestamp": "2025-01-01T10:00:00Z",
@@ -367,20 +367,20 @@ Response: `200 OK` (or `503` if not ready)
     { "name": "redis", "status": "healthy", "latency": 2 }
   ]
 }
-```
+\`\`\`
 
 ## Error Handling
 
 All errors follow this format:
 
-```json
+\`\`\`json
 {
   "error": "Error message",
   "code": "ERROR_CODE",
   "details": { ... },
   "requestId": "req_123456"
 }
-```
+\`\`\`
 
 ### Common Error Codes
 
@@ -403,12 +403,12 @@ Rate limits are applied per IP address:
 
 Response headers include rate limit info:
 
-```
+\`\`\`
 X-RateLimit-Limit: 60
 X-RateLimit-Remaining: 59
 X-RateLimit-Reset: 1704110460
 Retry-After: 60
-```
+\`\`\`
 
 ## CORS
 
@@ -423,13 +423,13 @@ Airtel Money and TNM send webhook notifications for payment status updates.
 **Endpoint:** `POST /api/payments/webhook/airtel` or `/api/payments/webhook/tnm`
 
 **Headers:**
-```
+\`\`\`
 x-airtel-signature: <HMAC-SHA256 signature>
 x-tnm-signature: <HMAC-SHA256 signature>
-```
+\`\`\`
 
 **Payload:**
-```json
+\`\`\`json
 {
   "reference": "AM20250101001",
   "transaction": {
@@ -439,7 +439,7 @@ x-tnm-signature: <HMAC-SHA256 signature>
     "timestamp": "2025-01-01T10:00:00Z"
   }
 }
-```
+\`\`\`
 
 Status codes:
 - `TS` - Transaction succeeded
@@ -451,7 +451,7 @@ Status codes:
 
 JavaScript/TypeScript client SDK (coming soon)
 
-```javascript
+\`\`\`javascript
 import { MatolaClient } from "@matola/client"
 
 const client = new MatolaClient({
@@ -473,7 +473,7 @@ const shipment = await client.shipments.create({
   pickupLocation: "Lilongwe",
   deliveryLocation: "Blantyre",
 })
-```
+\`\`\`
 
 ---
 

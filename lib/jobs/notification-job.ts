@@ -222,4 +222,3 @@ export async function processNotificationJob(job: Job<NotificationJobData>) {
     throw error
   }
 }
-
