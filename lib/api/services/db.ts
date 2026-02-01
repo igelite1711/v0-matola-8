@@ -1,60 +1,128 @@
-// Database service abstraction
-// This is a placeholder - connect to Neon/Supabase in production
+// Database service using Prisma ORM
+// All data is persisted to the configured database
 
-import { v4 as uuidv4 } from "uuid"
-
-// In-memory stores for development
-const users = new Map<string, any>()
-const shipments = new Map<string, any>()
-const matches = new Map<string, any>()
-const payments = new Map<string, any>()
-const ussdSessions = new Map<string, any>()
-const auditLogs: any[] = []
+import { prisma } from "@/lib/db/prisma"
 
 export const db = {
-  // Users
+  // ==================== Users ====================
   async createUser(data: {
     phone: string
     name: string
-    role: string
+    role: "shipper" | "transporter" | "broker" | "admin"
   }) {
-    const id = uuidv4()
-    const user = {
-      id,
-      ...data,
-      verified: false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+    try {
+      const user = await prisma.user.create({
+        data: {
+          phone: data.phone,
+          name: data.name,
+          role: data.role,
+          verified: false,
+          verificationLevel: "none",
+          preferredLanguage: "en",
+        },
+      })
+      return user
+    } catch (error) {
+      console.error("Failed to create user:", error)
+      throw error
     }
-    users.set(id, user)
-    users.set(`phone:${data.phone}`, user) // Index by phone
-    return user
   },
 
   async getUserByPhone(phone: string) {
-    return users.get(`phone:${phone}`) || null
+    try {
+      const user = await prisma.user.findUnique({
+        where: { phone },
+      })
+      return user
+    } catch (error) {
+      console.error("Failed to get user by phone:", error)
+      throw error
+    }
   },
 
   async getUserById(id: string) {
-    return users.get(id) || null
+    try {
+      const user = await prisma.user.findUnique({
+        where: { id },
+      })
+      return user
+    } catch (error) {
+      console.error("Failed to get user by id:", error)
+      throw error
+    }
   },
 
-  // Shipments
-  async createShipment(data: any) {
-    const id = uuidv4()
-    const shipment = {
-      id,
-      ...data,
-      status: "pending",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+  async updateUser(id: string, data: Partial<{
+    name: string
+    email: string
+    phone: string
+    whatsapp: string
+    avatar: string
+    verified: boolean
+    verificationLevel: string
+  }>) {
+    try {
+      const user = await prisma.user.update({
+        where: { id },
+        data,
+      })
+      return user
+    } catch (error) {
+      console.error("Failed to update user:", error)
+      throw error
     }
-    shipments.set(id, shipment)
-    return shipment
+  },
+
+  // ==================== Shipments ====================
+  async createShipment(data: {
+    userId: string
+    referenceNumber: string
+    description: string
+    cargoType: string
+    weight: number
+    estimatedValue?: number
+    pickupLocation: string
+    deliveryLocation: string
+    pickupDate: Date
+    deliveryDate: Date
+    paymentMethod?: string
+    seasonalCategory?: string
+  }) {
+    try {
+      const shipment = await prisma.shipment.create({
+        data: {
+          userId: data.userId,
+          referenceNumber: data.referenceNumber,
+          description: data.description,
+          cargoType: data.cargoType,
+          weight: data.weight,
+          estimatedValue: data.estimatedValue,
+          pickupLocation: data.pickupLocation,
+          deliveryLocation: data.deliveryLocation,
+          pickupDate: data.pickupDate,
+          deliveryDate: data.deliveryDate,
+          paymentMethod: data.paymentMethod,
+          seasonalCategory: data.seasonalCategory,
+          status: "draft",
+        },
+      })
+      return shipment
+    } catch (error) {
+      console.error("Failed to create shipment:", error)
+      throw error
+    }
   },
 
   async getShipmentById(id: string) {
-    return shipments.get(id) || null
+    try {
+      const shipment = await prisma.shipment.findUnique({
+        where: { id },
+      })
+      return shipment
+    } catch (error) {
+      console.error("Failed to get shipment by id:", error)
+      throw error
+    }
   },
 
   async getShipments(query: {
@@ -66,180 +134,304 @@ export const db = {
     page: number
     limit: number
   }) {
-    let results = Array.from(shipments.values())
+    try {
+      const where: any = {}
 
-    if (query.status) {
-      results = results.filter((s) => s.status === query.status)
-    }
-    if (query.origin) {
-      results = results.filter((s) => s.origin.toLowerCase().includes(query.origin!.toLowerCase()))
-    }
-    if (query.destination) {
-      results = results.filter((s) => s.destination.toLowerCase().includes(query.destination!.toLowerCase()))
-    }
-    if (query.date_from) {
-      results = results.filter((s) => new Date(s.departure_date) >= new Date(query.date_from!))
-    }
-    if (query.date_to) {
-      results = results.filter((s) => new Date(s.departure_date) <= new Date(query.date_to!))
-    }
+      if (query.status) {
+        where.status = query.status
+      }
+      if (query.origin) {
+        where.pickupLocation = {
+          contains: query.origin,
+          mode: "insensitive",
+        }
+      }
+      if (query.destination) {
+        where.deliveryLocation = {
+          contains: query.destination,
+          mode: "insensitive",
+        }
+      }
+      if (query.date_from) {
+        where.pickupDate = {
+          ...where.pickupDate,
+          gte: new Date(query.date_from),
+        }
+      }
+      if (query.date_to) {
+        where.pickupDate = {
+          ...where.pickupDate,
+          lte: new Date(query.date_to),
+        }
+      }
 
-    const total = results.length
-    const offset = (query.page - 1) * query.limit
-    const items = results.slice(offset, offset + query.limit)
+      const total = await prisma.shipment.count({ where })
+      const offset = (query.page - 1) * query.limit
 
-    return {
-      items,
-      total,
-      page: query.page,
-      limit: query.limit,
-      totalPages: Math.ceil(total / query.limit),
+      const items = await prisma.shipment.findMany({
+        where,
+        skip: offset,
+        take: query.limit,
+        orderBy: { createdAt: "desc" },
+      })
+
+      return {
+        items,
+        total,
+        page: query.page,
+        limit: query.limit,
+        totalPages: Math.ceil(total / query.limit),
+      }
+    } catch (error) {
+      console.error("Failed to get shipments:", error)
+      throw error
     }
   },
 
-  async updateShipment(id: string, data: any) {
-    const shipment = shipments.get(id)
-    if (!shipment) return null
-
-    const updated = {
-      ...shipment,
-      ...data,
-      updated_at: new Date().toISOString(),
+  async updateShipment(id: string, data: Partial<{
+    description: string
+    status: string
+    quotedPrice: number
+    finalPrice: number
+    paymentMethod: string
+  }>) {
+    try {
+      const shipment = await prisma.shipment.update({
+        where: { id },
+        data,
+      })
+      return shipment
+    } catch (error) {
+      console.error("Failed to update shipment:", error)
+      throw error
     }
-    shipments.set(id, updated)
-    return updated
   },
 
-  // Matches
-  async createMatch(data: any) {
-    const id = uuidv4()
-    const match = {
-      id,
-      ...data,
-      status: "pending",
-      matched_at: new Date().toISOString(),
+  // ==================== Matches ====================
+  async createMatch(data: {
+    shipmentId: string
+    transporterId: string
+    status: string
+    matchScore: number
+  }) {
+    try {
+      const match = await prisma.match.create({
+        data: {
+          shipmentId: data.shipmentId,
+          transporterId: data.transporterId,
+          status: data.status,
+          matchScore: data.matchScore,
+        },
+      })
+      return match
+    } catch (error) {
+      console.error("Failed to create match:", error)
+      throw error
     }
-    matches.set(id, match)
-    return match
   },
 
   async getMatchById(id: string) {
-    return matches.get(id) || null
+    try {
+      const match = await prisma.match.findUnique({
+        where: { id },
+      })
+      return match
+    } catch (error) {
+      console.error("Failed to get match by id:", error)
+      throw error
+    }
   },
 
   async getMatchesByUser(userId: string, role: string) {
-    return Array.from(matches.values()).filter((m) => {
+    try {
+      let matches
       if (role === "shipper") {
-        const shipment = shipments.get(m.shipment_id)
-        return shipment?.shipper_id === userId
+        // Get matches for shipments created by this user
+        matches = await prisma.match.findMany({
+          where: {
+            shipment: {
+              userId: userId,
+            },
+          },
+        })
+      } else {
+        // Get matches for shipments assigned to this transporter
+        matches = await prisma.match.findMany({
+          where: {
+            transporterId: userId,
+          },
+        })
       }
-      return m.transporter_id === userId
-    })
-  },
-
-  async updateMatch(id: string, data: any) {
-    const match = matches.get(id)
-    if (!match) return null
-
-    const updated = { ...match, ...data }
-    matches.set(id, updated)
-    return updated
-  },
-
-  // Payments
-  async createPayment(data: any) {
-    const id = uuidv4()
-    const reference = `MAT${Date.now()}${Math.random().toString(36).substring(2, 8).toUpperCase()}`
-    const payment = {
-      id,
-      reference,
-      ...data,
-      status: "pending",
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
+      return matches
+    } catch (error) {
+      console.error("Failed to get matches by user:", error)
+      throw error
     }
-    payments.set(id, payment)
-    payments.set(`ref:${reference}`, payment)
-    return payment
+  },
+
+  async updateMatch(id: string, data: Partial<{
+    status: string
+    matchScore: number
+  }>) {
+    try {
+      const match = await prisma.match.update({
+        where: { id },
+        data,
+      })
+      return match
+    } catch (error) {
+      console.error("Failed to update match:", error)
+      throw error
+    }
+  },
+
+  // ==================== Payments / Wallet Transactions ====================
+  async createPayment(data: {
+    userId: string
+    shipmentId?: string
+    type: string
+    amount: number
+    description?: string
+    paymentMethod?: string
+  }) {
+    try {
+      const transaction = await prisma.walletTransaction.create({
+        data: {
+          userId: data.userId,
+          shipmentId: data.shipmentId,
+          type: data.type,
+          amount: data.amount,
+          description: data.description,
+          status: "pending",
+        },
+      })
+      return transaction
+    } catch (error) {
+      console.error("Failed to create payment:", error)
+      throw error
+    }
   },
 
   async getPaymentById(id: string) {
-    return payments.get(id) || null
+    try {
+      const payment = await prisma.walletTransaction.findUnique({
+        where: { id },
+      })
+      return payment
+    } catch (error) {
+      console.error("Failed to get payment by id:", error)
+      throw error
+    }
   },
 
   async getPaymentByReference(reference: string) {
-    return payments.get(`ref:${reference}`) || null
+    try {
+      // Note: WalletTransaction doesn't have a reference field
+      // This is a placeholder for payment systems that might use external references
+      const payment = await prisma.walletTransaction.findFirst({
+        where: {
+          description: {
+            contains: reference,
+          },
+        },
+      })
+      return payment
+    } catch (error) {
+      console.error("Failed to get payment by reference:", error)
+      throw error
+    }
   },
 
-  async updatePayment(id: string, data: any) {
-    const payment = payments.get(id)
-    if (!payment) return null
-
-    const updated = {
-      ...payment,
-      ...data,
-      updated_at: new Date().toISOString(),
+  async updatePayment(id: string, data: Partial<{
+    status: string
+    amount: number
+    description: string
+  }>) {
+    try {
+      const payment = await prisma.walletTransaction.update({
+        where: { id },
+        data,
+      })
+      return payment
+    } catch (error) {
+      console.error("Failed to update payment:", error)
+      throw error
     }
-    payments.set(id, updated)
-    if (payment.reference) {
-      payments.set(`ref:${payment.reference}`, updated)
-    }
-    return updated
   },
 
-  // USSD Sessions
+  // ==================== USSD Sessions ====================
   async getUssdSession(sessionId: string) {
-    return ussdSessions.get(sessionId) || null
-  },
-
-  async upsertUssdSession(sessionId: string, data: any) {
-    const session = {
-      session_id: sessionId,
-      ...data,
-      updated_at: new Date().toISOString(),
+    try {
+      const session = await prisma.uSSDSession.findUnique({
+        where: { sessionId },
+      })
+      return session
+    } catch (error) {
+      console.error("Failed to get USSD session:", error)
+      throw error
     }
-    ussdSessions.set(sessionId, session)
-    return session
   },
 
-  // Audit Logs
-  async createAuditLog(data: {
-    user_id?: string
-    action: string
-    entity: string
-    entity_id?: string
-    changes?: any
-    ip_address?: string
+  async upsertUssdSession(sessionId: string, data: {
+    phoneNumber: string
+    state: string
+    context?: string
+    userId?: string
   }) {
-    const log = {
-      id: uuidv4(),
-      ...data,
-      timestamp: new Date().toISOString(),
+    try {
+      const session = await prisma.uSSDSession.upsert({
+        where: { sessionId },
+        create: {
+          sessionId,
+          phoneNumber: data.phoneNumber,
+          state: data.state,
+          context: data.context,
+          userId: data.userId,
+        },
+        update: {
+          state: data.state,
+          context: data.context,
+          userId: data.userId,
+          lastActivity: new Date(),
+          stepCount: {
+            increment: 1,
+          },
+        },
+      })
+      return session
+    } catch (error) {
+      console.error("Failed to upsert USSD session:", error)
+      throw error
     }
-    auditLogs.push(log)
-    return log
+  },
+
+  // ==================== Audit Logs ====================
+  async createAuditLog(data: {
+    userId?: string
+    action: string
+    resourceType: string
+    resourceId?: string
+    details?: string
+    ipAddress?: string
+  }) {
+    try {
+      const log = await prisma.auditLog.create({
+        data: {
+          userId: data.userId,
+          action: data.action,
+          resourceType: data.resourceType,
+          resourceId: data.resourceId,
+          details: data.details,
+          ipAddress: data.ipAddress,
+        },
+      })
+      return log
+    } catch (error) {
+      console.error("Failed to create audit log:", error)
+      throw error
+    }
   },
 }
 
-// SQL tagged template function for raw SQL queries (Neon/Postgres compatible)
-// SQL tagged template literal for database queries
-// In production, replace with actual Neon/Supabase client
-type SQLValue = string | number | boolean | null | undefined | Date
-type SQLResult = Record<string, any>[]
-
-export function sql(strings: TemplateStringsArray, ...values: SQLValue[]): Promise<SQLResult> {
-  // Build the query string with placeholders
-  const query = strings.reduce((acc, str, i) => {
-    return acc + str + (i < values.length ? `$${i + 1}` : "")
-  }, "")
-
-  // Log the query in development
-  console.log("[SQL Query]", query, values)
-
-  // In development, return empty array
-  // In production, this would execute against Neon/Supabase
-  return Promise.resolve([])
-}
-
-// Export for Neon-style usage
-export { sql as neon }
+// Direct Prisma exports for when you need lower-level access
+export { prisma }
