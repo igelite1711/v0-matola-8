@@ -300,17 +300,27 @@ model WalletTransaction {
   user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   shipmentId  String?
   shipment    Shipment? @relation(fields: [shipmentId], references: [id], onDelete: SetNull)
-  
-  type        String    // TransactionType as string
-  amount      Float
-  status      String    @default("pending") // TransactionStatus as string
+
+  // INVARIANT: Payment must reference exactly one shipment
+  reference   String    @unique // INVARIANT: Globally unique reference
+  type        String    // TransactionType as string - INVARIANT: amount > 0
+  amount      Float     // INVARIANT: > 0
+  platformFee Float     @default(0) // INVARIANT: <= 10% of amount
+  netAmount   Float     // INVARIANT: = amount - platformFee
+  status      String    @default("pending") // INVARIANT: status transitions immutable after "completed"
+  escrowStatus String   @default("none") // none | held | released - INVARIANT: Cannot double-release
   description String?
-  
+
+  // INVARIANT: Never hard-delete payments, soft-delete only
+  deletedAt   DateTime?
+
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
-  
+
   @@index([userId])
   @@index([status])
+  @@index([reference])
+  @@index([deletedAt])
 }
 
 // ============================================
