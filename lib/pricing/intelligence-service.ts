@@ -200,4 +200,3 @@ function getWeekKey(date: Date): string {
   const week = Math.ceil((d.getTime() - new Date(year, 0, 1).getTime()) / (7 * 24 * 60 * 60 * 1000))
   return `${year}-W${week.toString().padStart(2, "0")}`
 }
-

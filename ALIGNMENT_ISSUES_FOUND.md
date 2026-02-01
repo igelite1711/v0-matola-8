@@ -60,23 +60,23 @@ Comparing the MATOLA PRD (v2.0 December 2024) against current backend and fronte
 
 **API Schema Issue:**
 File: `lib/api/schemas/auth.ts` (OUTDATED)
-```typescript
+\`\`\`typescript
 // WRONG - expects OTP
 export const loginSchema = z.object({
   phone: phoneSchema,
   otp: z.string().length(6), // ❌ WRONG - should be PIN
 })
-```
+\`\`\`
 
 File: `lib/validators/api-schemas.ts` (CORRECT)
-```typescript
+\`\`\`typescript
 // CORRECT - expects PIN
 export const loginSchema = z.object({
   phone: z.string().regex(/^\+?265\d{9}$/),
   pin: z.string().length(4), // ✅ CORRECT
   role: z.enum(["shipper", "transporter", "broker", "admin"]).optional(),
 })
-```
+\`\`\`
 
 **⚠️ ACTION REQUIRED**: Delete/merge `lib/api/schemas/auth.ts` - it's conflicting with `lib/validators/api-schemas.ts`
 
@@ -87,7 +87,7 @@ export const loginSchema = z.object({
 ### ❌ NOT IMPLEMENTED
 
 **PRD Requirement:**
-```
+\`\`\`
 "Why USSD is King in Africa:
 - No data bundle required
 - Works on 100% of mobile phones
@@ -97,7 +97,7 @@ export const loginSchema = z.object({
 
 Target: 60% of user base
 Short Code: *384*628652#
-```
+\`\`\`
 
 **Current Implementation:**
 - No USSD routes found
@@ -108,13 +108,13 @@ Short Code: *384*628652#
 **What's Missing:**
 
 1. **USSD API Endpoints:**
-```bash
+\`\`\`bash
 POST /api/ussd/session
 POST /api/ussd/callback
-```
+\`\`\`
 
 2. **USSD State Machine (Redis):**
-```typescript
+\`\`\`typescript
 // Should store session state:
 {
   phone: "+265991234567",
@@ -124,12 +124,12 @@ POST /api/ussd/callback
   step_count: 5,
   created_at: "2024-12-06T10:30:00Z"
 }
-```
+\`\`\`
 
 3. **USSD Menu Flows:**
 The PRD specifies complete menu flows:
 
-```
+\`\`\`
 Main Menu:
   1. Post a load
   2. Find transport
@@ -140,10 +140,10 @@ Main Menu:
 
 Post Shipment Flow:
   Origin → Destination → Cargo Type → Weight → Price → Confirm
-```
+\`\`\`
 
 4. **Africa's Talking Integration:**
-```typescript
+\`\`\`typescript
 // Expected in service layer
 class USSDService {
   async handleUSSDCallback(phone, input, sessionId) {
@@ -154,7 +154,7 @@ class USSDService {
     // Return CON/END response
   }
 }
-```
+\`\`\`
 
 **Estimated Implementation Effort:** 40-60 hours
 
@@ -165,7 +165,7 @@ class USSDService {
 ### ❌ NOT IMPLEMENTED
 
 **PRD Requirement:**
-```
+\`\`\`
 "Why WhatsApp Works in Africa:
 - 95% smartphone users have WhatsApp
 - Familiar interface
@@ -175,7 +175,7 @@ class USSDService {
 Target: 25% of user base
 Provider: Twilio WhatsApp Business API
 Flows: Registration, Post Shipment, Match Notification, Support
-```
+\`\`\`
 
 **Current Implementation:**
 - No WhatsApp routes
@@ -186,11 +186,11 @@ Flows: Registration, Post Shipment, Match Notification, Support
 **What's Missing:**
 
 1. **WhatsApp API Endpoints:**
-```bash
+\`\`\`bash
 POST /api/whatsapp/webhook
 POST /api/whatsapp/send-message
 GET /api/whatsapp/status
-```
+\`\`\`
 
 2. **Message Flows (from PRD):**
 
@@ -204,7 +204,7 @@ GET /api/whatsapp/status
 | Customer Support | ❌ | Hand-off to support team |
 
 3. **Twilio Integration Expected:**
-```typescript
+\`\`\`typescript
 class WhatsAppService {
   async handleIncomingMessage(phone, message, context) {
     // Parse message
@@ -215,7 +215,7 @@ class WhatsAppService {
     // Send message
   }
 }
-```
+\`\`\`
 
 4. **Message Templates (from PRD):**
 - Welcome message
@@ -253,11 +253,11 @@ class WhatsAppService {
 ### ⚠️ PARTIAL IMPLEMENTATION
 
 **PRD Usage:**
-```
+\`\`\`
 Channel Feature Matrix shows SMS for:
 - User Registration (partial)
 - Track Shipment
-```
+\`\`\`
 
 **Current Implementation:**
 - OTP sending exists (`app/api/auth/send-otp/route.ts`)
@@ -276,14 +276,14 @@ Channel Feature Matrix shows SMS for:
 **Status:** ❌ MUST RESOLVE
 
 The old schema file expects:
-```typescript
+\`\`\`typescript
 otp: z.string().length(6) // Wrong!
-```
+\`\`\`
 
 But the actual login endpoint uses:
-```typescript
+\`\`\`typescript
 pin: z.string().length(4) // Correct!
-```
+\`\`\`
 
 **Fix:** Delete `lib/api/schemas/auth.ts` or update it to use PIN
 
@@ -291,14 +291,14 @@ pin: z.string().length(4) // Correct!
 **File:** `lib/api/client.ts`
 
 Current structure:
-```typescript
+\`\`\`typescript
 class APIClient {
   auth = {
     login: async (data: { phone, pin }) => { ... }
     register: async (data: { name, phone, pin, role }) => { ... }
   }
 }
-```
+\`\`\`
 
 This requires calling `api.auth.login()` but the context calls `api.login()`.
 

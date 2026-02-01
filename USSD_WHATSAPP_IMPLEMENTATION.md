@@ -40,7 +40,7 @@ USSD (Unstructured Supplementary Service Data) is the PRIMARY channel for Matola
 
 **1. Sign Up with Africa's Talking**
 
-```bash
+\`\`\`bash
 Website: https://africastalking.com/
 Service: USSD
 Step 1: Create account
@@ -48,27 +48,27 @@ Step 2: Get API credentials
 Step 3: Get USSD short code (*384*628652# or shared *384*68*265#)
 Cost: ~$500-2000/month for dedicated short code
 Budget Option: Shared short code ~$50/month
-```
+\`\`\`
 
 **2. Create USSD Service Environment**
 
-```env
+\`\`\`env
 # .env.local
 AFRICAS_TALKING_API_KEY=your_api_key
 AFRICAS_TALKING_USERNAME=your_username
 AFRICAS_TALKING_SHORT_CODE=384628652 # or 68
 USSD_SESSION_TTL=300 # 5 minutes
 REDIS_URL=redis://localhost:6379
-```
+\`\`\`
 
 **3. Redis Setup**
 
-```bash
+\`\`\`bash
 # For session storage
 docker run -d -p 6379:6379 redis:latest
 
 # Or use RedisCloud: https://redis.com/try-free/
-```
+\`\`\`
 
 ---
 
@@ -76,7 +76,7 @@ docker run -d -p 6379:6379 redis:latest
 
 **File Structure:**
 
-```
+\`\`\`
 lib/
   ussd/
     service.ts           # Main USSD handler
@@ -93,11 +93,11 @@ app/
   api/
     ussd/
       route.ts          # Webhook handler
-```
+\`\`\`
 
 **Create: `lib/ussd/service.ts`**
 
-```typescript
+\`\`\`typescript
 import Redis from 'ioredis'
 import { USSDStateMachine } from './state-machine'
 import { getUSSDMessage } from './messages'
@@ -188,11 +188,11 @@ export class USSDService {
     return `CON ${message}`
   }
 }
-```
+\`\`\`
 
 **Create: `lib/ussd/state-machine.ts`**
 
-```typescript
+\`\`\`typescript
 /**
  * USSD State Machine - Defines all possible states and transitions
  */
@@ -412,11 +412,11 @@ Sankhani 1 kapena 2`,
     }
   }
 }
-```
+\`\`\`
 
 **Create: `app/api/ussd/route.ts`**
 
-```typescript
+\`\`\`typescript
 import { NextRequest, NextResponse } from 'next/server'
 import { USSDService } from '@/lib/ussd/service'
 import { logger } from '@/lib/monitoring/logger'
@@ -460,7 +460,7 @@ export async function POST(request: NextRequest) {
     return new NextResponse('END Error processing your request. Please try again.', { status: 500 })
   }
 }
-```
+\`\`\`
 
 ---
 
@@ -474,7 +474,7 @@ Each state handler needs to:
 
 **Create: `lib/ussd/handlers/auth.ts`**
 
-```typescript
+\`\`\`typescript
 import { prisma } from '@/lib/db/prisma'
 import { hashPin, verifyPin } from '@/lib/auth/password'
 
@@ -542,7 +542,7 @@ export class AuthHandler {
 
   // ... register handlers
 }
-```
+\`\`\`
 
 ---
 
@@ -557,7 +557,7 @@ export class AuthHandler {
 
 **Unit Testing:**
 
-```typescript
+\`\`\`typescript
 // tests/ussd/service.test.ts
 import { USSDService } from '@/lib/ussd/service'
 
@@ -591,7 +591,7 @@ describe('USSDService', () => {
     expect(result.response).toContain('Invalid')
   })
 })
-```
+\`\`\`
 
 ---
 
@@ -616,7 +616,7 @@ WhatsApp provides a familiar interface for 95% of smartphone users and works wit
 
 **1. Sign Up with Twilio**
 
-```bash
+\`\`\`bash
 Website: https://www.twilio.com/
 Service: WhatsApp Business API
 Cost: ~$0.002/message inbound, $0.002 outbound
@@ -627,16 +627,16 @@ Setup Steps:
 3. Request WhatsApp Business API access
 4. Get account SID and auth token
 5. Link WhatsApp Business account (Meta Business Manager)
-```
+\`\`\`
 
 **2. Environment Variables**
 
-```env
+\`\`\`env
 TWILIO_ACCOUNT_SID=ACxxxxxxxxxxxxx
 TWILIO_AUTH_TOKEN=xxxxxxxxxxxxx
 TWILIO_WHATSAPP_NUMBER=whatsapp:+265999XXX XXX
 TWILIO_WEBHOOK_URL=https://yourdomain.com/api/whatsapp/webhook
-```
+\`\`\`
 
 **3. Twilio Webhook Configuration**
 
@@ -651,7 +651,7 @@ In Twilio console:
 
 **Create: `lib/whatsapp/service.ts`**
 
-```typescript
+\`\`\`typescript
 import twilio from 'twilio'
 import { prisma } from '@/lib/db/prisma'
 import { logger } from '@/lib/monitoring/logger'
@@ -964,11 +964,11 @@ Contact them to confirm details.`,
     return templates[name] || ''
   }
 }
-```
+\`\`\`
 
 **Create: `app/api/whatsapp/webhook/route.ts`**
 
-```typescript
+\`\`\`typescript
 import { NextRequest, NextResponse } from 'next/server'
 import twilio from 'twilio'
 import { WhatsAppService } from '@/lib/whatsapp/service'
@@ -1011,7 +1011,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
   }
 }
-```
+\`\`\`
 
 ---
 
@@ -1026,7 +1026,7 @@ export async function POST(request: NextRequest) {
 
 **Unit Tests:**
 
-```typescript
+\`\`\`typescript
 // tests/whatsapp/service.test.ts
 describe('WhatsAppService', () => {
   let service: WhatsAppService
@@ -1056,7 +1056,7 @@ describe('WhatsAppService', () => {
     expect(result?.text).toContain('cargo')
   })
 })
-```
+\`\`\`
 
 ---
 

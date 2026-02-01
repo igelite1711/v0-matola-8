@@ -37,4 +37,3 @@ export async function sendWhatsAppMessage(to: string, message: string): Promise<
     return false
   }
 }
-

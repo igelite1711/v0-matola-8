@@ -56,4 +56,3 @@ export async function requireRole(request: NextRequest, allowedRoles: string[]):
   }
   return auth
 }
-

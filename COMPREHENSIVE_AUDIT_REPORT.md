@@ -113,7 +113,7 @@ This audit evaluates the codebase against the comprehensive MATOLA LOGISTICS PLA
 - ❌ No token validation
 
 **Required Changes:**
-```typescript
+\`\`\`typescript
 // Need to implement:
 1. /api/auth/login - JWT generation
 2. /api/auth/refresh - Token refresh
@@ -121,7 +121,7 @@ This audit evaluates the codebase against the comprehensive MATOLA LOGISTICS PLA
 4. HTTP-only secure cookies
 5. 24-hour token expiry
 6. Refresh token mechanism
-```
+\`\`\`
 
 **Files to Modify:**
 - `contexts/app-context.tsx` - Replace localStorage with JWT
@@ -253,13 +253,13 @@ This audit evaluates the codebase against the comprehensive MATOLA LOGISTICS PLA
 - ❌ Production webhook handlers
 
 **Required Implementation:**
-```typescript
+\`\`\`typescript
 // Need to create:
 1. app/api/ussd/webhook/route.ts - Africa's Talking webhook
 2. lib/ussd/ussd-service.ts - USSD state machine (needs Redis)
 3. USSD session storage in Redis
 4. Integration with Africa's Talking API
-```
+\`\`\`
 
 **Files:**
 - `lib/ussd/` - USSD utilities (exists but needs backend)
@@ -283,13 +283,13 @@ This audit evaluates the codebase against the comprehensive MATOLA LOGISTICS PLA
 - ❌ Twilio/360Dialog integration
 
 **Required Implementation:**
-```typescript
+\`\`\`typescript
 // Need to create:
 1. app/api/whatsapp/webhook/route.ts - WhatsApp webhook
 2. lib/whatsapp/whatsapp-service.ts - Message processing
 3. Integration with Twilio or 360Dialog
 4. Message template management
-```
+\`\`\`
 
 ### 5.3 Progressive Web App (PWA) ❌ MISSING
 **Status:** ❌ **NOT IMPLEMENTED**
@@ -588,4 +588,3 @@ The codebase demonstrates **strong alignment** with the MATOLA LOGISTICS PLATFOR
 
 *Audit completed: December 2024*
 *Next review: After backend implementation*
-

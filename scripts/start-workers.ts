@@ -21,4 +21,3 @@ process.on("SIGINT", () => {
   console.log("SIGINT received, shutting down workers...")
   process.exit(0)
 })
-

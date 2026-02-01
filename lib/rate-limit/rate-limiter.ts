@@ -106,4 +106,3 @@ export function createRateLimitHeaders(result: RateLimitResult): Record<string, 
     "X-RateLimit-Reset": new Date(result.resetTime).toISOString(),
   }
 }
-

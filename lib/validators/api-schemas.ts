@@ -319,4 +319,3 @@ export const getLeaderboardSchema = z.object({
   region: z.enum(["Northern", "Central", "Southern"]).optional(),
   limit: z.coerce.number().int().min(1).max(100).default(50),
 })
-

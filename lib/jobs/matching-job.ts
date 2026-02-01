@@ -180,4 +180,3 @@ export async function processMatchingJob(job: Job<MatchingJobData>) {
     throw error
   }
 }
-

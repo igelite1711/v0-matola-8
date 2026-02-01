@@ -30,39 +30,39 @@ Matola is a comprehensive logistics platform designed for the African market, wi
 ### Installation
 
 1. Clone the repository:
-```bash
+\`\`\`bash
 git clone <repository-url>
 cd v0-matola-8
-```
+\`\`\`
 
 2. Install dependencies:
-```bash
+\`\`\`bash
 pnpm install
-```
+\`\`\`
 
 3. Set up environment variables:
-```bash
+\`\`\`bash
 cp env.example .env.local
 # Edit .env.local with your configuration
-```
+\`\`\`
 
 4. Set up the database:
-```bash
+\`\`\`bash
 pnpm run db:generate
 pnpm run db:push
 # Or for migrations:
 pnpm run db:migrate
-```
+\`\`\`
 
 5. Seed the database (optional):
-```bash
+\`\`\`bash
 pnpm run db:seed:full
-```
+\`\`\`
 
 6. Start the development server:
-```bash
+\`\`\`bash
 pnpm run dev
-```
+\`\`\`
 
 The app will be available at [http://localhost:3000](http://localhost:3000)
 
@@ -84,7 +84,7 @@ The app will be available at [http://localhost:3000](http://localhost:3000)
 
 ## Project Structure
 
-```
+\`\`\`
 v0-matola-8/
 ├── app/              # Next.js app directory
 │   ├── api/         # API routes
@@ -98,7 +98,7 @@ v0-matola-8/
 │   └── ...
 ├── prisma/          # Database schema
 └── tests/           # Test files
-```
+\`\`\`
 
 ## Features
 

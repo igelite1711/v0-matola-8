@@ -155,19 +155,19 @@ Complete PostgreSQL schema with all required tables:
 
 ### 1. Install Dependencies
 
-```bash
+\`\`\`bash
 npm install
 # or
 pnpm install
-```
+\`\`\`
 
 ### 2. Set Up Environment Variables
 
 Copy `.env.example` to `.env` and fill in:
 
-```bash
+\`\`\`bash
 cp .env.example .env
-```
+\`\`\`
 
 **Required:**
 - `DATABASE_URL` - PostgreSQL connection string
@@ -182,7 +182,7 @@ cp .env.example .env
 
 ### 3. Set Up Database
 
-```bash
+\`\`\`bash
 # Generate Prisma client
 npm run db:generate
 
@@ -194,13 +194,13 @@ npm run db:migrate
 
 # Open Prisma Studio (optional)
 npm run db:studio
-```
+\`\`\`
 
 ### 4. Run Development Server
 
-```bash
+\`\`\`bash
 npm run dev
-```
+\`\`\`
 
 ---
 
@@ -309,7 +309,7 @@ npm run dev
 ### Manual Testing
 
 1. **Authentication:**
-   ```bash
+   \`\`\`bash
    # Register
    curl -X POST http://localhost:3000/api/auth/register \
      -H "Content-Type: application/json" \
@@ -319,29 +319,29 @@ npm run dev
    curl -X POST http://localhost:3000/api/auth/login \
      -H "Content-Type: application/json" \
      -d '{"phone":"+265991234567","pin":"1234"}'
-   ```
+   \`\`\`
 
 2. **Create Shipment:**
-   ```bash
+   \`\`\`bash
    curl -X POST http://localhost:3000/api/shipments \
      -H "Content-Type: application/json" \
      -H "Authorization: Bearer YOUR_TOKEN" \
      -d '{...shipment data...}'
-   ```
+   \`\`\`
 
 ### USSD Testing
 
 Use Africa's Talking sandbox or configure webhook URL:
-```
+\`\`\`
 https://your-domain.com/api/ussd/webhook
-```
+\`\`\`
 
 ### WhatsApp Testing
 
 Use Twilio console to configure webhook:
-```
+\`\`\`
 https://your-domain.com/api/whatsapp/webhook
-```
+\`\`\`
 
 ---
 
@@ -401,4 +401,3 @@ https://your-domain.com/api/whatsapp/webhook
 
 *Backend implementation completed: December 2024*  
 *Ready for database migration and frontend integration*
-

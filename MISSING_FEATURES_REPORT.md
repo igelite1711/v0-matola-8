@@ -24,10 +24,10 @@ This document identifies critical missing features in both frontend and backend 
 
 **Current State:**
 - Matching is commented out in `app/api/shipments/route.ts`:
-  ```typescript
+  \`\`\`typescript
   // Trigger matching in background (would use queue in production)
   // await triggerMatching(shipment.id)
-  ```
+  \`\`\`
 
 **Required:**
 - `lib/jobs/matching-job.ts` - Background matching worker
@@ -485,4 +485,3 @@ This document identifies critical missing features in both frontend and backend 
 3. Create missing API endpoints (ratings, disputes, achievements)
 4. Set up real-time communication (WebSocket/SSE)
 5. Complete offline sync implementation
-

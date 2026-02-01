@@ -34,4 +34,3 @@ test.describe('Shipment Management', () => {
     await expect(page.locator('text=/shipment|no shipments/i')).toBeVisible()
   })
 })
-

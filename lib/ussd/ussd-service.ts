@@ -741,4 +741,3 @@ export async function handleMyShipments(phone: string, language: Language, page:
     }
   }
 }
-

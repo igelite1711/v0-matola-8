@@ -93,7 +93,7 @@ A multi-channel logistics matching platform that works within Africa's constrain
 
 **System Requirements:**
 
-```yaml
+\`\`\`yaml
 Server Infrastructure:
   Primary Power: Grid electricity with UPS
   Backup Power: 
@@ -120,7 +120,7 @@ Office/Field Operations:
     - Critical work during grid hours (6am-10am)
     - Offline-capable tools for all tasks
     - Battery conservation mode on all devices
-```
+\`\`\`
 
 ### 2.2 Network Connectivity Reality
 
@@ -130,7 +130,7 @@ Office/Field Operations:
 - **Access Communications:** 20%, limited coverage
 
 **Network Characteristics:**
-```yaml
+\`\`\`yaml
 Coverage by Region:
   Lilongwe (Capital):
     - 4G LTE: 60% coverage (5-15 Mbps typical)
@@ -174,11 +174,11 @@ Data Costs (Prepaid):
   
   Context: Daily minimum wage ~MWK 2,500
   Impact: Users extremely data-conscious
-```
+\`\`\`
 
 **System Design for African Networks:**
 
-```yaml
+\`\`\`yaml
 Application Architecture:
   Bandwidth Budget (per user session):
     - USSD: 0KB (carrier-provided channel)
@@ -215,13 +215,13 @@ CDN Strategy:
     - API responses: 5 minutes (stale-while-revalidate)
     - USSD menus: 24 hours
     - User profiles: 1 hour
-```
+\`\`\`
 
 ### 2.3 Device & Technology Penetration
 
 **Malawi Mobile Device Landscape (2024):**
 
-```yaml
+\`\`\`yaml
 Device Distribution:
   Feature Phones: 68%
     - Nokia: 35% (105, 106, 110 popular)
@@ -272,11 +272,11 @@ Internet Usage Patterns:
     3. USSD (banking, airtime): 80%
     4. Mobile money apps: 40%
     5. Other apps: <20%
-```
+\`\`\`
 
 **System Compatibility Requirements:**
 
-```yaml
+\`\`\`yaml
 Feature Phone Support:
   Primary Channel: USSD (*384*628652#)
   Requirements:
@@ -313,13 +313,13 @@ Smartphone Support:
     - Storage: 16GB (8GB with SD card)
     - Screen: 320x480px minimum
     - Android: 5.0+ (API level 21)
-```
+\`\`\`
 
 ### 2.4 Payment Ecosystem Reality
 
 **Malawi Payment Landscape:**
 
-```yaml
+\`\`\`yaml
 Payment Method Usage:
   Cash: 85% of transactions
     - MWK banknotes: K20, K50, K100, K200, K500, K1000, K2000, K5000
@@ -381,11 +381,11 @@ Banking Infrastructure:
     - MIPS: Batch processing (free, but 24-48h delay)
     - Internet banking: <5% adoption
     - USSD banking: Growing (NBS *326#, Standard *361#)
-```
+\`\`\`
 
 **Matola Payment Strategy:**
 
-```yaml
+\`\`\`yaml
 Phase 1 (Launch): Cash-First with Mobile Money Option
   Cash Handling:
     - In-person payment at pickup/delivery
@@ -449,13 +449,13 @@ Phase 3 (Month 7-12): Digital Wallet
   - Loyalty points/rewards
   - Credit facility (buy now, pay later)
   - Integration with banks
-```
+\`\`\`
 
 ### 2.5 Literacy & Language Considerations
 
 **Malawi Literacy Context:**
 
-```yaml
+\`\`\`yaml
 National Statistics:
   Literacy Rate: 62% (age 15+)
     - Male: 69%
@@ -494,11 +494,11 @@ Cultural Communication Norms:
   - Respect for authority figures
   - Group consensus valued
   - Oral tradition strong (stories, proverbs)
-```
+\`\`\`
 
 **System Language Strategy:**
 
-```yaml
+\`\`\`yaml
 Multilingual Implementation:
   Launch Languages:
     - English (UK spelling)
@@ -568,7 +568,7 @@ Error Messages (User-Friendly):
   ❌ Technical: "Invalid phone number format"
   ✅ User-Friendly: "Please enter phone like: 0991234567" (EN)
                     "Lemberani nambala ya foni monga: 0991234567" (NY)
-```
+\`\`\`
 
 ---
 
@@ -578,7 +578,7 @@ Error Messages (User-Friendly):
 
 **Channel Priority (Matola's Unique Approach):**
 
-```yaml
+\`\`\`yaml
 Channel Hierarchy:
   1. USSD (*384*628652#) - PRIMARY
      Why: Universal access, no data required, works on all phones
@@ -612,7 +612,7 @@ Channel Feature Matrix:
   Customer Support     |  ✗   |    ✓     |  ✗  |  ✓  |
   View History         |  ✓   |    ✗     |  ✗  |  ✓  |
   Analytics            |  ✗   |    ✗     |  ✗  |  ✓  |
-```
+\`\`\`
 
 ### 3.2 USSD System Architecture (PRIMARY CHANNEL)
 
@@ -626,7 +626,7 @@ Channel Feature Matrix:
 
 **USSD Technical Specifications:**
 
-```yaml
+\`\`\`yaml
 Africa's Talking USSD Integration:
   Short Code: *384*628652#
   Type: Dedicated short code (expensive but professional)
@@ -826,11 +826,11 @@ Localization Best Practices:
   - Price format: "MK 50,000" not "MWK 50,000.00"
   - Phone format: "0991234567" not "+265 99 123 4567"
   - Be culturally sensitive (polite language)
-```
+\`\`\`
 
 **USSD Backend Implementation:**
 
-```javascript
+\`\`\`javascript
 // src/services/ussdService.js
 
 class USSDService {
@@ -1081,7 +1081,7 @@ class USSDService {
     await queue.add('match-shipment', { shipmentId });
   }
 }
-```
+\`\`\`
 
 ### 3.3 WhatsApp Business Integration (SECONDARY CHANNEL)
 
@@ -1096,7 +1096,7 @@ class USSDService {
 
 **WhatsApp Business API Setup:**
 
-```yaml
+\`\`\`yaml
 Provider Options:
 
 Option 1: Twilio (Recommended for Startups)
@@ -1196,11 +1196,11 @@ Message Template Examples:
    3️⃣ ISSUE - There's a problem
    
    This helps us release payment to the driver."
-```
+\`\`\`
 
 **WhatsApp Conversation Flows:**
 
-```yaml
+\`\`\`yaml
 Flow 1: User Registration via WhatsApp
 
 User: "Hi" or "Hello" (first message)
@@ -1446,11 +1446,11 @@ Grace has been notified. Please contact her to confirm:
 4. Mark delivered when done
 
 Good luck! 🚛"
-```
+\`\`\`
 
 **WhatsApp Backend Implementation:**
 
-```javascript
+\`\`\`javascript
 // src/services/whatsappService.js
 
 const twilio = require('twilio');
@@ -1772,13 +1772,13 @@ class WhatsAppService {
 }
 
 module.exports = new WhatsAppService();
-```
+\`\`\`
 
 ### 3.4 SMS Notifications (TERTIARY CHANNEL)
 
 **SMS Strategy:**
 
-```yaml
+\`\`\`yaml
 SMS Use Cases (Push Notifications Only):
   1. OTP for registration/login
   2. Shipment match notifications
@@ -1844,11 +1844,11 @@ Cost Management:
   - Budget: MWK 150,000/month (~$140)
   - User opt-in required for non-transactional SMS
   - Opt-out option in every marketing SMS
-```
+\`\`\`
 
 **SMS Backend Implementation:**
 
-```javascript
+\`\`\`javascript
 // src/services/smsService.js
 
 const AfricasTalking = require('africastalking');
@@ -1963,7 +1963,7 @@ class SMSService {
 }
 
 module.exports = new SMSService();
-```
+\`\`\`
 
 ---
 
@@ -1971,7 +1971,7 @@ module.exports = new SMSService();
 
 ### 4.1 Database Design for African Scale
 
-```yaml
+\`\`\`yaml
 Database Choice: PostgreSQL 14+
 Rationale:
   - ACID compliance (critical for payments)
@@ -2368,11 +2368,11 @@ CREATE TRIGGER trigger_update_user_rating
 AFTER INSERT ON ratings
 FOR EACH ROW
 EXECUTE FUNCTION update_user_rating();
-```
+\`\`\`
 
 ### 4.2 Caching Strategy with Redis
 
-```yaml
+\`\`\`yaml
 Redis Use Cases:
   1. USSD session state (critical, TTL: 5 min)
   2. WhatsApp conversation context (TTL: 24h)
@@ -2535,11 +2535,11 @@ Event-Based Invalidation:
     await redis.del(`shipment:${id}`);
     await redis.del(`cache:shipments:available:*`); // Invalidate list cache
   }
-```
+\`\`\`
 
 ### 4.3 File Storage Strategy
 
-```yaml
+\`\`\`yaml
 Storage Requirements:
   - User verification documents (ID cards, licenses)
   - Vehicle photos and registration documents
@@ -2650,7 +2650,7 @@ Response: {
     "medium": "https://cdn.matola.mw/thumbs/uuid_400.jpg"
   }
 }
-```
+\`\`\`
 # 5. MATCHING ALGORITHM & BUSINESS LOGIC
 
 This is the **heart** of Matola - the intelligent system that connects cargo with transport efficiently. In Africa, where trust, relationships, and practical logistics matter more than algorithmic perfection, we need a matching system that balances automation with human judgment.
@@ -2668,7 +2668,7 @@ This is the **heart** of Matola - the intelligent system that connects cargo wit
 - Vehicle condition varies widely (some trucks are 30+ years old)
 
 **Matola's Matching Approach:**
-```yaml
+\`\`\`yaml
 Matching Strategy:
   Phase 1 (Launch): Semi-Automated + Manual Review
     - Algorithm suggests top 5-10 matches
@@ -2695,7 +2695,7 @@ Core Principles:
   3. **Reputation matters**: Verified, highly-rated users get priority
   4. **Flexibility wins**: Allow manual browsing alongside automatic matching
   5. **Local knowledge**: Routes like Lilongwe-Blantyre are well-known, optimize for these
-```
+\`\`\`
 
 ---
 
@@ -2703,7 +2703,7 @@ Core Principles:
 
 ### 5.2.1 Core Matching Logic
 
-```javascript
+\`\`\`javascript
 // src/services/matchingService.js
 
 class MatchingService {
@@ -3287,11 +3287,11 @@ class MatchingService {
 }
 
 module.exports = new MatchingService();
-```
+\`\`\`
 
 ### 5.2.2 Transporter Search (Reverse Matching)
 
-```javascript
+\`\`\`javascript
 /**
  * When transporter searches for loads
  * (Reverse of the main matching algorithm)
@@ -3373,7 +3373,7 @@ class TransporterSearchService {
     };
   }
 }
-```
+\`\`\`
 
 ---
 
@@ -3386,7 +3386,7 @@ class TransporterSearchService {
 - Road conditions impact price (rainy season premium)
 - Cargo type matters (fragile = higher price)
 
-```javascript
+\`\`\`javascript
 // src/services/pricingService.js
 
 class PricingService {
@@ -3531,7 +3531,7 @@ class PricingService {
     return routes[key] || this.estimateDistanceFromGPS(origin, destination) || 300;
   }
 }
-```
+\`\`\`
 
 ---
 
@@ -3543,7 +3543,7 @@ class PricingService {
 - High-value shipments need extra verification
 - Dispute prevention through early intervention
 
-```javascript
+\`\`\`javascript
 // src/controllers/adminMatchingController.js
 
 class AdminMatchingController {
@@ -3648,7 +3648,7 @@ class AdminMatchingController {
     res.json({ success: true, action });
   }
 }
-```
+\`\`\`
 
 ---
 
@@ -3668,7 +3668,7 @@ In Africa, **trust is earned through relationships, not technology**. A beautifu
 
 ## 6.1 Multi-Layered Trust Framework
 
-```yaml
+\`\`\`yaml
 Trust Pyramid (Bottom to Top):
 
 Level 1: BASIC VERIFICATION (Entry Requirement)
@@ -3709,7 +3709,7 @@ Visual Trust Indicators:
   🚛 Professional Driver (truck badge)
   🏆 Union Member (union badge)
   💎 Platform Verified (diamond badge)
-```
+\`\`\`
 
 ---
 
@@ -3721,7 +3721,7 @@ Visual Trust Indicators:
 - Mobile money is tied to phone number
 - Easy to verify, hard to fake at scale
 
-```javascript
+\`\`\`javascript
 // src/services/verificationService.js
 
 class VerificationService {
@@ -3896,7 +3896,7 @@ class VerificationService {
     return normalized;
   }
 }
-```
+\`\`\`
 
 ---
 
@@ -3908,7 +3908,7 @@ class VerificationService {
 - Common alternative: Voter registration card
 - Birth certificates for age verification
 
-```javascript
+\`\`\`javascript
 // src/services/identityVerificationService.js
 
 class IdentityVerificationService {
@@ -4076,7 +4076,7 @@ class IdentityVerificationService {
     return { success: true, decision };
   }
 }
-```
+\`\`\`
 
 ---
 
@@ -4094,7 +4094,7 @@ class IdentityVerificationService {
 - Minibus Operators Association (MOA)
 - National Small Scale Farmers Association (NASFAM) - for farmer-shippers
 
-```javascript
+\`\`\`javascript
 // src/services/unionVerificationService.js
 
 class UnionVerificationService {
@@ -4315,7 +4315,7 @@ class UnionVerificationService {
     return `union_${unionId}_${crypto.randomBytes(32).toString('hex')}`;
   }
 }
-```
+\`\`\`
 
 ---
 
@@ -4329,7 +4329,7 @@ class UnionVerificationService {
 
 **Matola's Approach: Balanced Rating System**
 
-```javascript
+\`\`\`javascript
 // src/services/ratingService.js
 
 class RatingService {
@@ -4608,7 +4608,7 @@ class RatingService {
     return summary.rows[0];
   }
 }
-```
+\`\`\`
 
 ---
 
@@ -4620,7 +4620,7 @@ class RatingService {
 - Face-saving is important (avoid public embarrassment)
 - Solutions focus on restoration, not punishment
 
-```javascript
+\`\`\`javascript
 // src/services/disputeService.js
 
 class DisputeService {
@@ -4827,13 +4827,13 @@ class DisputeService {
     );
   }
 }
-```
+\`\`\`
 
 ---
 
 ## 6.7 Fraud Prevention Measures
 
-```yaml
+\`\`\`yaml
 Fraud Types & Prevention:
 
 1. FAKE LISTINGS:
@@ -4901,7 +4901,7 @@ Fraud Detection Triggers:
   - Perfect 5.0 rating with <5 trips
   - Cargo type changes after matching
   - Location drastically different from profile
-```
+\`\`\`
 
 ---
 
@@ -4915,7 +4915,7 @@ This section provides **day-to-day management procedures** for running Matola in
 
 ## 7.1 Daily Operations Checklist
 
-```yaml
+\`\`\`yaml
 MORNING ROUTINE (6:00 AM - 9:00 AM CAT)
 
 Support Team Lead:
@@ -4977,7 +4977,7 @@ Finance/Admin:
   ☐ Process transporter payouts (if due)
   ☐ Update financial records
   ☐ Prepare bank deposits for next morning
-```
+\`\`\`
 
 ---
 
@@ -4985,7 +4985,7 @@ Finance/Admin:
 
 ### 7.2.1 Alert Response Matrix
 
-```yaml
+\`\`\`yaml
 CRITICAL ALERTS (Immediate Response - Page On-Call)
 
 Alert: Database Connection Failure
@@ -5084,11 +5084,11 @@ Actions:
   2. Review access logs for suspicious IPs
   3. Enable rate limiting if attack detected
   4. Block malicious IPs via firewall
-```
+\`\`\`
 
 ### 7.2.2 Incident Response Procedure
 
-```javascript
+\`\`\`javascript
 // Incident Template: incidents/INCIDENT_YYYYMMDD_NNN.md
 
 /**
@@ -5156,24 +5156,24 @@ Actions:
 
 ### Root Cause
 Matching algorithm running unoptimized query scanning entire shipments table:
-```sql
+\`\`\`sql
 -- BAD: No index on departure_date
 SELECT * FROM shipments 
 WHERE status = 'pending' 
 AND departure_date >= CURRENT_DATE 
 ORDER BY created_at DESC;
-```
+\`\`\`
 
 With 50,000+ shipments in database, this query took 8+ seconds and exhausted connection pool during peak matching job (runs every 15 min).
 
 ### Resolution
 1. **Immediate:** Killed slow queries, freed connections
 2. **Short-term:** Created index:
-   ```sql
+   \`\`\`sql
    CREATE INDEX CONCURRENTLY idx_shipments_status_departure 
    ON shipments(status, departure_date) 
    WHERE status = 'pending';
-   ```
+   \`\`\`
 3. **Long-term:** Added query timeout (5s), connection pool monitoring
 
 ### Prevention Measures
@@ -5199,7 +5199,7 @@ With 50,000+ shipments in database, this query took 8+ seconds and exhausted con
 1. [@TechLead] Add query performance tests to CI/CD by Dec 14
 2. [@DevOps] Set up weekly load testing on staging by Dec 21
 3. [@Engineering] Audit all queries for missing indexes by Jan 5
-```
+\`\`\`
 
 ---
 
@@ -5207,7 +5207,7 @@ With 50,000+ shipments in database, this query took 8+ seconds and exhausted con
 
 ### 7.3.1 Support Ticket Categories & SLAs
 
-```yaml
+\`\`\`yaml
 Ticket Priorities & Response Times:
 
 CRITICAL (Response: 15 min | Resolution: 4 hours)
@@ -5236,11 +5236,11 @@ LOW (Response: 24 hours | Resolution: 7 days)
   - General feedback
   - Documentation clarification
   - Historical data questions
-```
+\`\`\`
 
 ### 7.3.2 Common Support Scenarios
 
-```markdown
+\`\`\`markdown
 ## SCENARIO 1: "Driver Not Showing Up"
 
 **Symptoms:**
@@ -5284,7 +5284,7 @@ LOW (Response: 24 hours | Resolution: 7 days)
    - If habitual no-show, suspend account
 
 **WhatsApp Template to Shipper:**
-```
+\`\`\`
 Hello [Name], we understand [Driver] has not arrived yet. 
 We've contacted them and are finding you an alternative driver. 
 You'll receive an update within 30 minutes. 
@@ -5292,7 +5292,7 @@ You'll receive an update within 30 minutes.
 Sorry for this inconvenience. Your next shipment will get 10% discount.
 
 Need urgent help? Call us: +265 XXX XXXX
-```
+\`\`\`
 
 **Escalation Criteria:**
 - Unable to reach driver after 30 minutes
@@ -5328,11 +5328,11 @@ Need urgent help? Call us: +265 XXX XXXX
 
    **a) Shipper Hasn't Confirmed Delivery**
    - Send reminder to shipper:
-     ```
+     \`\`\`
      Hi [Name], has your shipment #[REF] been delivered? 
      Please confirm so we can release payment to the driver.
      Reply: YES (delivered) or NO (not yet)
-     ```
+     \`\`\`
    - If confirmed: Proceed to release payment
    - If denied: Open investigation
 
@@ -5351,17 +5351,17 @@ Need urgent help? Call us: +265 XXX XXXX
    - Log technical incident
 
 4. **Release Payment** (5 minutes)
-   ```javascript
+   \`\`\`javascript
    // Admin action
    await paymentService.releaseEscrow(paymentId, {
      released_by: agentId,
      reason: 'Manual release - delivery confirmed',
      notes: 'Shipper confirmed via WhatsApp, photos verified'
    });
-   ```
+   \`\`\`
 
 5. **Notify Driver**
-   ```
+   \`\`\`
    Good news! Payment of MWK [AMOUNT] has been released.
    
    Method: [Airtel Money/TNM/Cash]
@@ -5370,7 +5370,7 @@ Need urgent help? Call us: +265 XXX XXXX
    It may take 5-30 minutes to reflect in your account.
    
    Receipt: https://matola.mw/receipt/[ID]
-   ```
+   \`\`\`
 
 6. **Document Resolution**
    - Update support ticket
@@ -5453,7 +5453,7 @@ Need urgent help? Call us: +265 XXX XXXX
    - Mark both accounts for monitoring
 
 5. **Execute Resolution** (5 minutes)
-   ```javascript
+   \`\`\`javascript
    // Partial refund
    await paymentService.processRefund(paymentId, {
      amount: compensationAmount,
@@ -5461,7 +5461,7 @@ Need urgent help? Call us: +265 XXX XXXX
      approved_by: agentId,
      notes: '[detailed explanation]'
    });
-   ```
+   \`\`\`
 
 6. **Educate & Prevent** (5 minutes)
    - Send packaging guidelines to shipper
@@ -5472,7 +5472,7 @@ Need urgent help? Call us: +265 XXX XXXX
 **Cargo Handling Guidelines (Send to Users):**
 
 *For Shippers:*
-```
+\`\`\`
 📦 PACKAGING TIPS:
 - Use sturdy boxes/crates
 - Wrap fragile items individually
@@ -5485,10 +5485,10 @@ For extra protection:
 - Add insurance (3% of value)
 - Request special handling
 - Use our recommended packaging service
-```
+\`\`\`
 
 *For Drivers:*
-```
+\`\`\`
 🚛 CARGO CARE:
 - Inspect cargo at pickup (note any damage)
 - Secure items properly (use ropes/straps)
@@ -5498,7 +5498,7 @@ For extra protection:
 - Report any issues immediately
 
 Your reputation depends on safe delivery!
-```
+\`\`\`
 
 **Escalation Criteria:**
 - Cargo value >MWK 100,000
@@ -5545,32 +5545,32 @@ Your reputation depends on safe delivery!
 2. **Resolution Steps:**
 
    **Resend OTP:**
-   ```javascript
+   \`\`\`javascript
    // Admin panel action
    await authService.resendOTP(phoneNumber, {
      triggered_by: agentId,
      reason: 'User did not receive SMS'
    });
-   ```
+   \`\`\`
 
    **Manual Verification (Last Resort):**
-   ```javascript
+   \`\`\`javascript
    // If OTP system completely broken
    await authService.manualVerify(phoneNumber, {
      verified_by: agentId,
      method: 'support_call',
      notes: 'Verified via voice call, user answered security questions'
    });
-   ```
+   \`\`\`
 
    **Account Recovery:**
-   ```javascript
+   \`\`\`javascript
    // If user locked out
    await authService.unlockAccount(userId, {
      unlocked_by: agentId,
      reason: 'Failed OTP attempts - user verified via call'
    });
-   ```
+   \`\`\`
 
 3. **Troubleshooting Network Issues:**
    - If widespread: Post system status update
@@ -5609,7 +5609,7 @@ Your reputation depends on safe delivery!
 
    **Documents Unclear:**
    - Request better photos:
-     ```
+     \`\`\`
      Hi [Name], we need clearer photos of your:
      - [ID Card / License / Vehicle Registration]
      
@@ -5620,7 +5620,7 @@ Your reputation depends on safe delivery!
      - Text must be readable
      
      Upload via WhatsApp or call us for help.
-     ```
+     \`\`\`
 
    **Documents Invalid/Suspicious:**
    - Escalate to senior agent
@@ -5628,14 +5628,14 @@ Your reputation depends on safe delivery!
    - Possible rejection
 
 3. **Expedite Process** (If Legitimate):**
-   ```javascript
+   \`\`\`javascript
    // Fast-track verification
    await verificationService.approve(userId, {
      approved_by: agentId,
      fast_tracked: true,
      reason: 'Delay exceeded SLA, documents valid'
    });
-   ```
+   \`\`\`
 
 4. **Compensate for Delay:**
    - If delay >72 hours: Apologize + offer benefit
@@ -5650,7 +5650,7 @@ Your reputation depends on safe delivery!
    - If technical issue: Escalate to engineering
 
 **WhatsApp Response:**
-```
+\`\`\`
 Hi [Name], sorry for the delay in reviewing your verification.
 
 ✅ Good news: You're now VERIFIED!
@@ -5664,7 +5664,7 @@ You can now:
 As an apology, your first shipment is FREE!
 
 Start now: *384*628652# or WhatsApp "POST"
-```
+\`\`\`
 
 ---
 
@@ -5732,7 +5732,7 @@ Start now: *384*628652# or WhatsApp "POST"
    - Educate both parties
 
 5. **Policy Enforcement:**
-   ```
+   \`\`\`
    MATOLA PRICE POLICY:
    
    ✅ Price is FINAL once match accepted
@@ -5748,7 +5748,7 @@ Start now: *384*628652# or WhatsApp "POST"
       - Traffic delays
    
    Violation = Account warning/suspension
-   ```
+   \`\`\`
 
 6. **Prevent Future Disputes:**
    - Add price confirmation step in USSD
@@ -5762,7 +5762,7 @@ Start now: *384*628652# or WhatsApp "POST"
 
 ### 7.4.1 In-Person Verification Visits
 
-```markdown
+\`\`\`markdown
 ## FIELD VERIFICATION PROTOCOL
 
 **Purpose:** Build trust through face-to-face verification of transporters
@@ -5785,7 +5785,7 @@ Start now: *384*628652# or WhatsApp "POST"
 **Verification Process:**
 
 1. **Schedule Appointment** (Phone/WhatsApp)
-   ```
+   \`\`\`
    Hello [Name], this is [Agent] from Matola. 
 
    We'd like to verify your account in person. This will:
@@ -5799,7 +5799,7 @@ Start now: *384*628652# or WhatsApp "POST"
    - Our Matola office
 
    Takes only 15 minutes!
-   ```
+   \`\`\`
 
 2. **Meeting Preparation**
    - Confirm location and time (1 hour before)
@@ -5840,7 +5840,7 @@ Start now: *384*628652# or WhatsApp "POST"
    - Document in notes
 
 4. **Documentation** (Mobile App Entry)
-   ```javascript
+   \`\`\`javascript
    // Field agent mobile app
    {
      user_id: "uuid",
@@ -5869,7 +5869,7 @@ Start now: *384*628652# or WhatsApp "POST"
      notes: "Vehicle in good condition. Driver professional and cooperative.",
      recommendation: "approve"
    }
-   ```
+   \`\`\`
 
 5. **Issue Verification Materials:**
    - Print verification certificate on spot
@@ -5897,11 +5897,11 @@ Start now: *384*628652# or WhatsApp "POST"
 - Check in after each verification
 - If unsafe situation: Leave immediately, report
 - Never handle large cash amounts
-```
+\`\`\`
 
 ### 7.4.2 Transport Union Partnership Management
 
-```markdown
+\`\`\`markdown
 ## UNION ENGAGEMENT PROTOCOL
 
 **Goal:** Build strong relationships with transport unions for bulk user acquisition and verification
@@ -5961,7 +5961,7 @@ Start now: *384*628652# or WhatsApp "POST"
    - Recognize top-performing members
 
 **Union Partnership Agreement Template:**
-```
+\`\`\`
 MATOLA-UNION PARTNERSHIP AGREEMENT
 
 Between: Matola Logistics Ltd
@@ -6003,7 +6003,6 @@ Signed:
 ___________________ (Matola Representative)
 ___________________ (Union Representative)
 Date: _______________
-```
+\`\`\`
 
 ---
-

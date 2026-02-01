@@ -23,7 +23,7 @@ Create a `.env.local` file with all required variables. See `.env.example` for t
 
 ### Critical Variables (Must be set)
 
-```env
+\`\`\`env
 # Authentication - MUST generate secure random strings
 JWT_SECRET=<generate with: openssl rand -hex 32>
 REFRESH_SECRET=<generate with: openssl rand -hex 32>
@@ -56,46 +56,46 @@ SENTRY_DSN=<your-sentry-dsn>
 
 # Application
 NODE_ENV=production
-```
+\`\`\`
 
 ## Database Setup
 
 ### 1. Create PostgreSQL Database
 
-```bash
+\`\`\`bash
 # Using Neon (recommended for Vercel)
 # Create a new database at https://console.neon.tech
 
 # Or use another PostgreSQL provider (Supabase, etc)
-```
+\`\`\`
 
 ### 2. Run Migrations
 
-```bash
+\`\`\`bash
 # After setting DATABASE_URL
 pnpm run db:migrate:deploy
 
 # Or for Prisma push (development/prototyping only)
 pnpm run db:push
-```
+\`\`\`
 
 ### 3. Seed Initial Data (Optional)
 
-```bash
+\`\`\`bash
 # Seed achievements (recommended)
 pnpm run db:seed
 
 # Seed full test data (optional)
 pnpm run db:seed:full
-```
+\`\`\`
 
 ## Deployment to Vercel
 
 ### 1. Connect Repository
 
-```bash
+\`\`\`bash
 vercel link
-```
+\`\`\`
 
 ### 2. Set Environment Variables in Vercel Dashboard
 
@@ -107,7 +107,7 @@ Navigate to Vercel Project Settings → Environment Variables and add all variab
 
 In `vercel.json` or Vercel dashboard:
 
-```json
+\`\`\`json
 {
   "buildCommand": "pnpm run build",
   "installCommand": "pnpm install",
@@ -116,13 +116,13 @@ In `vercel.json` or Vercel dashboard:
     "NODE_ENV": "production"
   }
 }
-```
+\`\`\`
 
 ### 4. Deploy
 
-```bash
+\`\`\`bash
 vercel --prod
-```
+\`\`\`
 
 Or configure GitHub integration for automatic deployments on push to main.
 
@@ -130,10 +130,10 @@ Or configure GitHub integration for automatic deployments on push to main.
 
 ### 1. Verify Health Endpoints
 
-```bash
+\`\`\`bash
 curl https://your-app.com/api/health
 curl https://your-app.com/api/health/ready
-```
+\`\`\`
 
 Both should return status 200 with service health information.
 
@@ -148,10 +148,10 @@ Both should return status 200 with service health information.
 
 In production, start the background workers process:
 
-```bash
+\`\`\`bash
 # On a separate machine or container
 pnpm run workers:start
-```
+\`\`\`
 
 Or deploy workers to a service like Railway, Render, or AWS Lambda.
 
@@ -217,16 +217,16 @@ For high traffic:
 
 ### Database Backup
 
-```bash
+\`\`\`bash
 # Daily backups of PostgreSQL
 pg_dump postgresql://user:password@host/matola_prod > backup-$(date +%Y%m%d).sql
-```
+\`\`\`
 
 ### Restore from Backup
 
-```bash
+\`\`\`bash
 psql postgresql://user:password@host/matola_prod < backup-YYYYMMDD.sql
-```
+\`\`\`
 
 ### Data Retention
 
@@ -284,7 +284,7 @@ For issues:
 
 ## Monitoring Commands
 
-```bash
+\`\`\`bash
 # Check database
 SELECT COUNT(*) FROM "User";
 
@@ -294,7 +294,7 @@ redis-cli INFO memory
 
 # Monitor job queues
 npm run db:studio  # View Prisma data
-```
+\`\`\`
 
 ---
 

@@ -109,4 +109,3 @@ describe('API Validation Schemas', () => {
     })
   })
 })
-

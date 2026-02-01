@@ -31,7 +31,7 @@ This document details the implementation of all production readiness items ident
 - ✅ CI/CD integration
 
 **Usage:**
-```bash
+\`\`\`bash
 # Run all tests
 npm run test
 
@@ -49,7 +49,7 @@ npm run test:e2e
 
 # Run E2E tests with UI
 npm run test:e2e:ui
-```
+\`\`\`
 
 **Dependencies Added:**
 - `vitest` - Unit and integration testing
@@ -77,7 +77,7 @@ npm run test:e2e:ui
 - ✅ Migration commands in package.json
 
 **Usage:**
-```bash
+\`\`\`bash
 # Generate Prisma client
 npm run db:generate
 
@@ -92,7 +92,7 @@ npm run db:seed:full
 
 # Open Prisma Studio
 npm run db:studio
-```
+\`\`\`
 
 **Note:** 
 - The migration.sql file is a template. In practice, run `npx prisma migrate dev --name init` to generate the actual migration from your schema.
@@ -169,7 +169,7 @@ npm run db:studio
   - Performance metrics
 
 **Health Check Response:**
-```json
+\`\`\`json
 {
   "status": "healthy" | "degraded" | "unhealthy",
   "timestamp": "2024-12-01T00:00:00.000Z",
@@ -184,7 +184,7 @@ npm run db:studio
     "memory": { ... }
   }
 }
-```
+\`\`\`
 
 **Metrics Available:**
 - `api.requests` - Total API requests
@@ -195,13 +195,13 @@ npm run db:studio
 - `users.registered` - User registrations
 
 **Usage:**
-```bash
+\`\`\`bash
 # Health check
 curl http://localhost:3000/api/health
 
 # Metrics (Prometheus format)
 curl http://localhost:3000/api/metrics
-```
+\`\`\`
 
 **Integration:**
 - Can be integrated with monitoring tools like:
@@ -246,7 +246,7 @@ curl http://localhost:3000/api/metrics
 - Marks items as synced after successful sync
 
 **Usage:**
-```typescript
+\`\`\`typescript
 import { offlineStorage } from '@/lib/offline/indexeddb'
 import { syncService } from '@/lib/offline/sync'
 
@@ -264,7 +264,7 @@ await syncService.sync()
 
 // Start auto-sync
 syncService.startAutoSync()
-```
+\`\`\`
 
 **API Client Integration:**
 - Automatically saves to IndexedDB on create/update
@@ -297,21 +297,21 @@ syncService.startAutoSync()
 ### 🚀 Next Steps:
 
 1. **Install Dependencies:**
-   ```bash
+   \`\`\`bash
    npm install
-   ```
+   \`\`\`
 
 2. **Run Database Migrations:**
-   ```bash
+   \`\`\`bash
    npm run db:migrate
    npm run db:seed:full
-   ```
+   \`\`\`
 
 3. **Run Tests:**
-   ```bash
+   \`\`\`bash
    npm run test
    npm run test:e2e
-   ```
+   \`\`\`
 
 4. **Configure CI/CD:**
    - Add GitHub secrets
@@ -343,4 +343,3 @@ syncService.startAutoSync()
 ---
 
 **All critical production readiness items have been implemented!** 🎉
-

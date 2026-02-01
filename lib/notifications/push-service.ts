@@ -43,4 +43,3 @@ export async function sendPushNotification(
     return false
   }
 }
-

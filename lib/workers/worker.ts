@@ -60,4 +60,3 @@ cleanupWorker.on("completed", (job) => {
 if (typeof window === "undefined") {
   console.log("Background workers started")
 }
-

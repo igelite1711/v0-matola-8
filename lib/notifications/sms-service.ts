@@ -57,4 +57,3 @@ export async function sendSMS(to: string, message: string): Promise<boolean> {
     return false
   }
 }
-

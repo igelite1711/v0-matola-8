@@ -35,18 +35,18 @@ All requested features have been successfully implemented according to the MATOL
 - ✅ Error handling and logging
 
 **Webhook URL:**
-```
+\`\`\`
 https://your-domain.com/api/whatsapp/webhook
-```
+\`\`\`
 
 **Environment Variables Required:**
-```env
+\`\`\`env
 TWILIO_ACCOUNT_SID=your-account-sid
 TWILIO_AUTH_TOKEN=your-auth-token
 TWILIO_WHATSAPP_NUMBER=whatsapp:+265XXXXXXXXX
 UPSTASH_REDIS_REST_URL=your-redis-url
 UPSTASH_REDIS_REST_TOKEN=your-redis-token
-```
+\`\`\`
 
 ---
 
@@ -78,19 +78,19 @@ UPSTASH_REDIS_REST_TOKEN=your-redis-token
 4. **Bank Transfer** - Bank account transfer
 
 **Webhook URL:**
-```
+\`\`\`
 https://your-domain.com/api/payments/webhook
-```
+\`\`\`
 
 **Environment Variables Required:**
-```env
+\`\`\`env
 AIRTEL_MONEY_API_KEY=your-api-key
 AIRTEL_MONEY_API_URL=https://api.airtel.africa
 MATOLA_AIRTEL_NUMBER=+265XXXXXXXXX
 TNM_MPAMBA_API_KEY=your-api-key
 TNM_MPAMBA_API_URL=https://api.tnm.co.mw
 MATOLA_TNM_NUMBER=+265XXXXXXXXX
-```
+\`\`\`
 
 ---
 
@@ -261,7 +261,7 @@ MATOLA_TNM_NUMBER=+265XXXXXXXXX
 ## 🚀 Deployment Checklist
 
 ### Environment Variables
-```env
+\`\`\`env
 # Database
 DATABASE_URL=postgresql://...
 
@@ -287,7 +287,7 @@ MATOLA_TNM_NUMBER=+265XXXXXXXXX
 
 # App
 NEXT_PUBLIC_APP_URL=https://matola.mw
-```
+\`\`\`
 
 ### Webhook Configuration
 
@@ -359,4 +359,3 @@ The MATOLA LOGISTICS PLATFORM now has:
 
 *Implementation completed: December 2024*  
 *Ready for database migration and production deployment*
-
