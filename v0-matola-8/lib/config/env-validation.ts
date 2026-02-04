@@ -9,6 +9,7 @@
 export interface EnvironmentConfig {
     // Authentication
     JWT_SECRET: string
+    REFRESH_SECRET: string
     JWT_EXPIRES_IN?: string
 
     // Database
