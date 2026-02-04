@@ -3,7 +3,11 @@ import { jwtVerify, SignJWT } from "jose"
 import crypto from "crypto"
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || crypto.randomBytes(32).toString("hex"))
-const REFRESH_SECRET = new TextEncoder().encode(process.env.REFRESH_SECRET || crypto.randomBytes(32).toString("hex"))
+const REFRESH_SECRET = new TextEncoder().encode(
+  process.env.REFRESH_SECRET || (() => {
+    throw new Error("REFRESH_SECRET environment variable is required")
+  })()
+)
 const JWT_EXPIRY = "24h"
 const JWT_EXPIRY_SECONDS = 86400
 const REFRESH_EXPIRY = "7d"
