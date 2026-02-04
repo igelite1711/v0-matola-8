@@ -59,6 +59,7 @@ interface ValidationResult {
 const REQUIRED_VARS = [
     'DATABASE_URL',
     'JWT_SECRET',
+    'REFRESH_SECRET',
 ] as const
 
 /**
