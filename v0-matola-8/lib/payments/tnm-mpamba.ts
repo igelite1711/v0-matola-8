@@ -160,8 +160,7 @@ export function verifyTnmWebhookChecksum(
 ): boolean {
   const secret = process.env.TNM_MPAMBA_WEBHOOK_SECRET
   if (!secret) {
-    logger.warn("TNM webhook secret not configured, allowing request")
-    return true // Fail open in dev
+    throw new Error("Webhook secret not configured. Payment webhooks cannot be verified.")
   }
 
   try {

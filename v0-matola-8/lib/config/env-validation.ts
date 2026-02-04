@@ -9,6 +9,7 @@
 export interface EnvironmentConfig {
     // Authentication
     JWT_SECRET: string
+    REFRESH_SECRET: string
     JWT_EXPIRES_IN?: string
 
     // Database
@@ -59,6 +60,7 @@ interface ValidationResult {
 const REQUIRED_VARS = [
     'DATABASE_URL',
     'JWT_SECRET',
+    'REFRESH_SECRET',
 ] as const
 
 /**

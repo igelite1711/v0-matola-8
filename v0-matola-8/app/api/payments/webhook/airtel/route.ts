@@ -10,6 +10,16 @@ export async function POST(req: NextRequest) {
   const rawBody = await req.text()
   const signature = req.headers.get("x-airtel-signature") || ""
 
+  let payload: any
+  try {
+    payload = JSON.parse(rawBody)
+  } catch (error) {
+    logger.error("Failed to parse Airtel webhook payload", {
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return NextResponse.json({ error: "Invalid JSON", code: "INVALID_JSON" }, { status: 400 })
+  }
+
   if (!verifyAirtelWebhookSignature(rawBody, signature)) {
     logger.warn("Invalid Airtel webhook signature", { reference: payload?.reference })
     await db.createAuditLog({
@@ -22,7 +32,6 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const payload = JSON.parse(rawBody)
     const { transaction } = payload
     const transactionId = transaction?.id
     const status = transaction?.status_code

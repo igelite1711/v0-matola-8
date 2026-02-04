@@ -147,8 +147,7 @@ export function verifyAirtelWebhookSignature(
 ): boolean {
   const secret = process.env.AIRTEL_MONEY_WEBHOOK_SECRET
   if (!secret) {
-    logger.warn("Airtel webhook secret not configured, allowing request")
-    return true // Fail open in dev
+    throw new Error("Webhook secret not configured. Payment webhooks cannot be verified.")
   }
 
   try {

@@ -28,6 +28,7 @@ model User {
   rating            Float    @default(0)
   totalRatings      Int      @default(0)
   verified          Boolean  @default(false)
+  status            String   @default("active") // "active" | "suspended" | "deactivated"
   verificationLevel String   @default("none") // "none" | "phone" | "id" | "community" | "rtoa" | "full"
   preferredLanguage String   @default("en") // "en" | "ny"
   
@@ -474,4 +475,3 @@ model AuditLog {
   @@index([userId])
   @@index([resourceType])
 }
-
