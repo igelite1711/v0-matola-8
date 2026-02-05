@@ -488,15 +488,20 @@ function LoadCard({
         <span className="font-semibold text-foreground">{load.destination}</span>
       </div>
 
-      <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
-        <span className="flex items-center gap-1">
-          <Package className="h-3.5 w-3.5" />
-          {load.cargo}
-        </span>
-        <span className="w-1 h-1 rounded-full bg-muted-foreground" />
-        <span>{load.weight.toLocaleString()} kg</span>
-        <span className="w-1 h-1 rounded-full bg-muted-foreground" />
-        <span>{load.distance} km</span>
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="flex items-center gap-2 text-sm bg-secondary/30 rounded-lg p-2">
+          <CargoIcon className="h-4 w-4 text-primary flex-shrink-0" />
+          <span className="font-medium text-foreground">{load.cargo}</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm bg-secondary/30 rounded-lg p-2">
+          <Gauge className="h-4 w-4 text-primary flex-shrink-0" />
+          <span className="font-medium text-foreground">{load.weight.toLocaleString()} kg</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm bg-secondary/30 rounded-lg p-2 col-span-2">
+          <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+          <span className="text-muted-foreground">{load.distance} km distance</span>
+          <span className="text-xs text-muted-foreground ml-auto">~{Math.round(load.distance / 100)} hours</span>
+        </div>
       </div>
 
       <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 mb-4">
