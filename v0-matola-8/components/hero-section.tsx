@@ -14,10 +14,19 @@ export function HeroSection() {
 
       <div className="container relative mx-auto px-4">
         <div className="mx-auto max-w-4xl text-center">
-          <div className="mb-4 inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 sm:mb-6 sm:gap-2 sm:px-4 sm:py-2">
-            <Leaf className="h-3 w-3 text-primary sm:h-4 sm:w-4" />
-            <span className="text-[10px] font-medium text-primary sm:text-xs">Nyengo ya Fodya</span>
-            <span className="text-[10px] text-muted-foreground sm:text-xs">Tobacco Season - High Demand!</span>
+          <div className="mb-4 flex flex-wrap items-center justify-center gap-2 sm:mb-6 sm:gap-3">
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-3 py-1.5 sm:gap-2 sm:px-4 sm:py-2">
+              <Leaf className="h-3 w-3 text-primary sm:h-4 sm:w-4" />
+              <span className="text-[10px] font-medium text-primary sm:text-xs">Nyengo ya Fodya</span>
+              <span className="text-[10px] text-muted-foreground sm:text-xs">High Demand!</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-success/30 bg-success/10 px-3 py-1.5 sm:gap-2 sm:px-4 sm:py-2">
+              <Phone className="h-3 w-3 text-success sm:h-4 sm:w-4" />
+              <span className="text-[10px] font-medium text-success sm:text-xs">USSD Ready</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 rounded-full border border-info/30 bg-info/10 px-3 py-1.5 sm:gap-2 sm:px-4 sm:py-2">
+              <span className="text-[10px] font-medium text-info sm:text-xs">Offline Works</span>
+            </div>
           </div>
 
           <h1 className="mb-4 text-balance text-2xl font-bold tracking-tight text-foreground sm:mb-6 sm:text-4xl md:text-5xl lg:text-6xl">
