@@ -135,9 +135,9 @@ export function QuickPostModal({ isOpen, onClose, onSuccess }: QuickPostModalPro
 
               {/* Origin */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label htmlFor="origin-select" className="block text-sm font-medium text-foreground mb-2">
                   <MapPin className="inline h-4 w-4 mr-1 text-success" />
-                  {language === "ny" ? "Kuchokera" : "From"}
+                  {language === "ny" ? "Kuchokera" : "From"} <span className="text-destructive" aria-label="required">*</span>
                 </label>
                 <div className="grid grid-cols-4 gap-2">
                   {CITIES.map((city) => (
