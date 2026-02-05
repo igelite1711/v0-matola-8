@@ -408,18 +408,17 @@ function ShipmentCard({
 
         {/* Matches for pending */}
         {shipment.status === "pending" && shipment.matches && shipment.bestMatch && (
-          <div className="p-3 rounded-xl bg-success/5 border border-success/20 mb-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-success font-medium">
+          <div className="p-4 rounded-xl bg-success/5 border border-success/20 mb-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex-1">
+                <p className="text-sm text-success font-semibold">
                   {shipment.matches} {language === "ny" ? "apezeka" : "matches found"}
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  {language === "ny" ? "Wabwino kwambiri" : "Best match"}: {shipment.bestMatch.name} -{" "}
-                  {formatMWK(shipment.bestMatch.price)}
+                <p className="text-xs text-muted-foreground mt-1">
+                  {language === "ny" ? "Wabwino kwambiri" : "Best match"}: {shipment.bestMatch.name} <span className="text-success font-medium">- {formatMWK(shipment.bestMatch.price)}</span>
                 </p>
               </div>
-              <Button size="sm" className="bg-success text-white hover:bg-success/90">
+              <Button size="sm" className="bg-success text-white hover:bg-success/90 h-10 px-4 font-semibold flex-shrink-0">
                 {language === "ny" ? "Onani" : "View"}
               </Button>
             </div>
