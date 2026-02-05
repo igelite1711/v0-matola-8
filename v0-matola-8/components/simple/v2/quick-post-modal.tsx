@@ -211,9 +211,9 @@ export function QuickPostModal({ isOpen, onClose, onSuccess }: QuickPostModalPro
             <div className="space-y-6">
               {/* Cargo Type */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
+                <label htmlFor="cargo-select" className="block text-sm font-medium text-foreground mb-2">
                   <Package className="inline h-4 w-4 mr-1" />
-                  {language === "ny" ? "Mtundu wa Katundu" : "Cargo Type"}
+                  {language === "ny" ? "Mtundu wa Katundu" : "Cargo Type"} <span className="text-destructive" aria-label="required">*</span>
                 </label>
                 <div className="grid grid-cols-3 gap-2">
                   {CARGO_TYPES.map((cargo) => (
