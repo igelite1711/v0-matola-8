@@ -238,8 +238,8 @@ export function QuickPostModal({ isOpen, onClose, onSuccess }: QuickPostModalPro
 
               {/* Weight */}
               <div>
-                <label className="block text-sm font-medium text-foreground mb-2">
-                  {language === "ny" ? "Kulemera" : "Weight"}
+                <label htmlFor="weight-select" className="block text-sm font-medium text-foreground mb-2">
+                  {language === "ny" ? "Kulemera" : "Weight"} <span className="text-destructive" aria-label="required">*</span>
                 </label>
                 <div className="grid grid-cols-5 gap-2">
                   {WEIGHT_OPTIONS.map((opt) => (
