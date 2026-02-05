@@ -399,6 +399,7 @@ function ShipmentCard({
                 e.preventDefault()
                 window.location.href = `tel:${shipment.transporter?.phone}`
               }}
+              aria-label={`${language === "ny" ? "Imbani" : "Call"} ${shipment.transporter?.name} at ${shipment.transporter?.phone}`}
             >
               <Phone className="h-5 w-5" />
               <span className="hidden sm:inline text-sm font-medium">{language === "ny" ? "Imbani" : "Call"}</span>
