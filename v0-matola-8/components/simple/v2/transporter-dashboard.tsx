@@ -422,6 +422,15 @@ function NavItem({
   )
 }
 
+function getCargoIcon(cargoType: string) {
+  const cargoMap: Record<string, React.ElementType> = {
+    "Farm Produce": Wheat,
+    "General Goods": Boxes,
+    "Building Materials": Boxes,
+  }
+  return cargoMap[cargoType] || Package
+}
+
 function LoadCard({
   load,
   language,
@@ -432,6 +441,7 @@ function LoadCard({
   onViewDetails: () => void
 }) {
   const trustLevel = getTrustLevel(load.shipper.trustScore)
+  const CargoIcon = getCargoIcon(load.cargo)
 
   const urgencyConfig = {
     today: {
