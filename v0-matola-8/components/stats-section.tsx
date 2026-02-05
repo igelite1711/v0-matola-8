@@ -1,9 +1,9 @@
 export function StatsSection() {
   const stats = [
-    { value: "40%", label: "Backhaul Savings", labelMw: "Kusungidwa", description: "average cost reduction" },
-    { value: "850+", label: "Verified Transporters", labelMw: "Oyendetsa", description: "RTOA & community verified" },
-    { value: "28", label: "Districts Covered", labelMw: "Maboma", description: "across all 3 regions" },
-    { value: "94%", label: "On-Time Delivery", labelMw: "Pa Nthawi", description: "successful deliveries" },
+    { value: "40%", label: "Backhaul Savings", labelMw: "Kusungidwa", description: "average cost reduction", icon: "💰" },
+    { value: "850+", label: "Verified Transporters", labelMw: "Oyendetsa", description: "RTOA & community verified", icon: "✓" },
+    { value: "28", label: "Districts Covered", labelMw: "Maboma", description: "across all 3 regions", icon: "🗺️" },
+    { value: "94%", label: "On-Time Delivery", labelMw: "Pa Nthawi", description: "successful deliveries", icon: "⏰" },
   ]
 
   return (
