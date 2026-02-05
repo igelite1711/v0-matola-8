@@ -373,9 +373,9 @@ function ShipmentCard({
 
         {/* Transporter info for in_transit */}
         {shipment.status === "in_transit" && shipment.transporter && (
-          <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 mb-3">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary/10">
+          <div className="flex items-center justify-between p-4 rounded-xl bg-secondary/50 mb-3 gap-3">
+            <div className="flex items-center gap-3 flex-1">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 flex-shrink-0">
                 <span className="text-sm font-bold text-primary">
                   {shipment.transporter.name
                     .split(" ")
@@ -383,10 +383,10 @@ function ShipmentCard({
                     .join("")}
                 </span>
               </div>
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="font-medium text-foreground text-sm">{shipment.transporter.name}</p>
                 <div className="flex items-center gap-2">
-                  <Star className="h-3 w-3 fill-warning text-warning" />
+                  <Star className="h-3 w-3 fill-warning text-warning flex-shrink-0" />
                   <span className="text-xs text-muted-foreground">{shipment.transporter.rating}</span>
                   <span className="text-xs text-success">{getTrustLevel(shipment.transporter.trustScore).label}</span>
                 </div>
@@ -394,14 +394,14 @@ function ShipmentCard({
             </div>
             <Button
               size="sm"
-              variant="outline"
-              className="h-9 w-9 p-0 rounded-full border-primary text-primary bg-transparent"
+              className="h-12 px-6 rounded-full bg-primary text-primary-foreground gap-2 flex-shrink-0"
               onClick={(e) => {
                 e.preventDefault()
                 window.location.href = `tel:${shipment.transporter?.phone}`
               }}
             >
-              <Phone className="h-4 w-4" />
+              <Phone className="h-5 w-5" />
+              <span className="hidden sm:inline text-sm font-medium">{language === "ny" ? "Imbani" : "Call"}</span>
             </Button>
           </div>
         )}
