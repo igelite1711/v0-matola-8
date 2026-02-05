@@ -347,9 +347,12 @@ function ShipmentCard({
 
         {/* Details */}
         <div className="flex items-center gap-3 text-sm text-muted-foreground mb-3">
-          <span>{shipment.cargo}</span>
+          <div className="flex items-center gap-1.5">
+            <CargoIcon className="h-4 w-4 text-primary" />
+            <span>{shipment.cargo}</span>
+          </div>
           <span className="w-1 h-1 rounded-full bg-muted-foreground" />
-          <span>{shipment.weight.toLocaleString()} kg</span>
+          <span className="font-medium text-foreground">{shipment.weight.toLocaleString()} kg</span>
         </div>
 
         {/* Progress bar for in_transit */}
