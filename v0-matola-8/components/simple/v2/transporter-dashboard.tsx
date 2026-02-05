@@ -539,13 +539,14 @@ function LoadCard({
       <div className="flex gap-3">
         <Button
           variant="outline"
-          className="flex-1 h-12 rounded-xl border-border text-muted-foreground bg-transparent"
+          className="flex-1 h-12 sm:h-11 rounded-xl border-2 font-semibold text-muted-foreground bg-transparent hover:bg-secondary"
           onClick={onViewDetails}
         >
           {language === "ny" ? "Zambiri" : "Details"}
         </Button>
-        <Button className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground" onClick={onViewDetails}>
-          {language === "ny" ? "Vomerani" : "Accept"}
+        <Button className="flex-1 h-12 sm:h-11 rounded-xl bg-primary text-primary-foreground font-semibold gap-2" onClick={onViewDetails}>
+          <CheckCircle2 className="h-5 w-5" />
+          <span className="hidden sm:inline">{language === "ny" ? "Vomerani" : "Accept"}</span>
         </Button>
       </div>
     </div>
