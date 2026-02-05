@@ -33,6 +33,7 @@ export function HeroSection() {
             Nyamulani Katundu Ku <span className="text-primary">Malawi</span>
             <br className="hidden sm:block" />
             <span className="sm:hidden"> </span>Mosavuta, Motsika Mtengo
+            <span className="sr-only">Easily and affordably ship cargo across Malawi with verified transporters, USSD and WhatsApp support, and offline capability for feature phones.</span>
           </h1>
 
           <p className="mx-auto mb-6 max-w-xl text-pretty text-sm text-muted-foreground sm:mb-8 sm:max-w-2xl sm:text-base md:text-lg">
