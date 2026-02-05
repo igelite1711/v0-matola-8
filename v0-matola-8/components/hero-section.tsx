@@ -50,17 +50,17 @@ export function HeroSection() {
           </div>
 
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-center sm:gap-4">
-            <Button size="lg" asChild className="h-12 w-full gap-2 text-base sm:h-11 sm:w-auto sm:text-sm">
+            <Button size="lg" asChild className="h-14 w-full gap-2 text-base font-semibold sm:h-12 sm:w-auto sm:text-base">
               <Link href="/register">
                 Yambani Kutumiza / Start Shipping
-                <ArrowRight className="h-4 w-4" />
+                <ArrowRight className="h-5 w-5" />
               </Link>
             </Button>
             <Button
               size="lg"
               variant="outline"
               asChild
-              className="h-12 w-full text-base sm:h-11 sm:w-auto sm:text-sm bg-transparent"
+              className="h-14 w-full text-base font-semibold sm:h-12 sm:w-auto sm:text-base bg-background border-2"
             >
               <Link href="/register?type=transporter">Lowani Ngati Woyendetsa / Join as Driver</Link>
             </Button>
