@@ -290,6 +290,15 @@ function NavItem({
   )
 }
 
+function getCargoIcon(cargoType: string) {
+  const cargoMap: Record<string, React.ElementType> = {
+    "Farm Produce": Wheat,
+    "General Goods": Boxes,
+    "Building Materials": Boxes,
+  }
+  return cargoMap[cargoType] || Package
+}
+
 function ShipmentCard({
   shipment,
   language,
@@ -320,6 +329,7 @@ function ShipmentCard({
 
   const status = statusConfig[shipment.status]
   const StatusIcon = status.icon
+  const CargoIcon = getCargoIcon(shipment.cargo)
 
   return (
     <Link href={shipment.status === "in_transit" ? `/simple/v2/track/${shipment.id}` : "#"}>
