@@ -165,11 +165,11 @@ export function ShipperDashboardV2() {
               </div>
               <Button
                 size="lg"
-                className="rounded-2xl bg-primary text-primary-foreground h-12 px-5 gap-2"
+                className="rounded-2xl bg-primary text-primary-foreground h-12 px-5 gap-2 sm:h-11 font-semibold"
                 onClick={() => setShowQuickPost(true)}
               >
                 <Plus className="h-5 w-5" />
-                {language === "ny" ? "Tumizani" : "Post Load"}
+                <span className="hidden sm:inline">{language === "ny" ? "Tumizani" : "Post Load"}</span>
               </Button>
             </div>
           </div>
