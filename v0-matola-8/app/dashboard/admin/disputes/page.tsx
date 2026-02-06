@@ -66,9 +66,8 @@ const mockDisputes = [
   },
 ]
 
-export default function AdminDisputesPage() {
-  const { user, showToast } = useApp()
-  const userName = user?.name || "Admin"
+function AdminDisputesContent() {
+  const { showToast } = useApp()
   const [searchQuery, setSearchQuery] = useState("")
   const [activeTab, setActiveTab] = useState("all")
   const [resolution, setResolution] = useState("")
