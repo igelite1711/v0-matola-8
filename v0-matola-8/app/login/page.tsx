@@ -30,14 +30,14 @@ export default function LoginPage() {
                 <Phone className="h-5 w-5 text-foreground" />
               </div>
               <span className="text-xs text-muted-foreground">USSD</span>
-              <span className="text-xs font-medium text-primary">*555#</span>
+              <span className="text-xs font-medium text-primary">*384*628652#</span>
             </div>
             <div className="flex flex-col items-center gap-1">
               <div className="flex h-10 w-10 items-center justify-center rounded-full bg-green-100">
                 <MessageCircle className="h-5 w-5 text-green-600" />
               </div>
               <span className="text-xs text-muted-foreground">WhatsApp</span>
-              <span className="text-xs font-medium text-primary">0999 123 456</span>
+              <span className="text-xs font-medium text-primary">+265999000000</span>
             </div>
           </div>
         </div>
