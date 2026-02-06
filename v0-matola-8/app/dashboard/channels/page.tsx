@@ -1,10 +1,11 @@
+import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { USSDSimulator } from "@/components/dashboard/ussd/ussd-simulator"
 import { WhatsAppSimulator } from "@/components/dashboard/whatsapp/whatsapp-simulator"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Phone, MessageCircle, Globe, Users } from "lucide-react"
 
-export default function ChannelsPage() {
+function ChannelsContent() {
   const channelStats = [
     { channel: "USSD", users: "12,450", percentage: 45, icon: Phone },
     { channel: "WhatsApp", users: "9,820", percentage: 35, icon: MessageCircle },
@@ -75,5 +76,13 @@ export default function ChannelsPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+export default function ChannelsPage() {
+  return (
+    <DashboardShell>
+      <ChannelsContent />
+    </DashboardShell>
   )
 }

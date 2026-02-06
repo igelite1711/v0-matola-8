@@ -3,8 +3,7 @@
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { useApp } from "@/contexts/app-context"
-import { DashboardHeader } from "@/components/dashboard/dashboard-header"
-import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar"
+import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -56,15 +55,9 @@ export default function SettingsPage() {
     }
   }
 
-  const userType = user?.role || "shipper"
-  const userName = user?.name || "User"
-
   return (
-    <div className="flex min-h-screen bg-background">
-      <DashboardSidebar userType={userType} />
-      <div className="flex flex-1 flex-col">
-        <DashboardHeader userName={userName} userType={userType} />
-        <main className="flex-1 p-4 sm:p-6">
+    <DashboardShell>
+      <div className="space-y-6">
           <div className="mb-6">
             <h1 className="text-2xl font-bold text-foreground">{language === "en" ? "Settings" : "Zosintha"}</h1>
             <p className="text-sm text-muted-foreground">
@@ -364,8 +357,7 @@ export default function SettingsPage() {
               </Button>
             </CardContent>
           </Card>
-        </main>
       </div>
-    </div>
+    </DashboardShell>
   )
 }

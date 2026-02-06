@@ -1,11 +1,14 @@
-import { ShipperDashboardV2 } from "@/components/simple/v2/shipper-dashboard"
-import { FloatingSOSButton } from "@/components/simple/v2/emergency-sos"
+import { DashboardShell } from "@/components/dashboard/dashboard-shell"
+import { ShipperOverview } from "@/components/dashboard/shipper/shipper-overview"
 
+/**
+ * Consolidated shipper dashboard - merged /app/simple/v2/shipper and /app/dashboard
+ * Uses the unified responsive DashboardShell that works for both mobile and desktop
+ */
 export default function ShipperPage() {
   return (
-    <>
-      <ShipperDashboardV2 />
-      <FloatingSOSButton />
-    </>
+    <DashboardShell>
+      <ShipperOverview />
+    </DashboardShell>
   )
 }

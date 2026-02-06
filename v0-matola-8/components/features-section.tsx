@@ -1,4 +1,4 @@
-import { Shield, Smartphone, TrendingDown, Wheat, Map, Banknote } from "lucide-react"
+import { Shield, Smartphone, TrendingDown, Wheat, Map, Banknote, WifiOff } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
 export function FeaturesSection() {
@@ -8,6 +8,7 @@ export function FeaturesSection() {
       title: "Backhaul Optimization",
       titleMw: "Chepetsani Mtengo",
       description: "Save 30-50% by matching return trips. Don't drive empty from Blantyre back to Lilongwe.",
+      highlight: true,
     },
     {
       icon: Shield,
@@ -19,7 +20,7 @@ export function FeaturesSection() {
       icon: Smartphone,
       title: "USSD + WhatsApp",
       titleMw: "Palibe Data Yambiri",
-      description: "Book via USSD *384*MATOLA# or WhatsApp. Works on any phone, even 2G networks.",
+      description: "Book via USSD *384*628652# or WhatsApp. Works on any phone, even 2G networks.",
     },
     {
       icon: Wheat,
@@ -34,10 +35,10 @@ export function FeaturesSection() {
       description: "Lilongwe↔Blantyre, Mzuzu↔Karonga, plus Nacala, Beira & Dar corridors for exports.",
     },
     {
-      icon: Banknote,
-      title: "Mobile Money Payments",
-      titleMw: "Airtel/TNM Mpamba",
-      description: "Pay with Airtel Money or TNM Mpamba. Escrow protection ensures safe transactions.",
+      icon: WifiOff,
+      title: "Offline Functionality",
+      titleMw: "Sitalindira Intaneti",
+      description: "Access the app offline, queue actions, and sync when online. Perfect for low-bandwidth areas.",
     },
   ]
 

@@ -21,6 +21,9 @@ import {
   Award,
   Users,
   Home,
+  Boxes,
+  Wheat,
+  Gauge,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
@@ -419,6 +422,15 @@ function NavItem({
   )
 }
 
+function getCargoIcon(cargoType: string) {
+  const cargoMap: Record<string, React.ElementType> = {
+    "Farm Produce": Wheat,
+    "General Goods": Boxes,
+    "Building Materials": Boxes,
+  }
+  return cargoMap[cargoType] || Package
+}
+
 function LoadCard({
   load,
   language,
@@ -429,6 +441,7 @@ function LoadCard({
   onViewDetails: () => void
 }) {
   const trustLevel = getTrustLevel(load.shipper.trustScore)
+  const CargoIcon = getCargoIcon(load.cargo)
 
   const urgencyConfig = {
     today: {
@@ -475,15 +488,20 @@ function LoadCard({
         <span className="font-semibold text-foreground">{load.destination}</span>
       </div>
 
-      <div className="flex items-center gap-3 text-sm text-muted-foreground mb-4">
-        <span className="flex items-center gap-1">
-          <Package className="h-3.5 w-3.5" />
-          {load.cargo}
-        </span>
-        <span className="w-1 h-1 rounded-full bg-muted-foreground" />
-        <span>{load.weight.toLocaleString()} kg</span>
-        <span className="w-1 h-1 rounded-full bg-muted-foreground" />
-        <span>{load.distance} km</span>
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="flex items-center gap-2 text-sm bg-secondary/30 rounded-lg p-2">
+          <CargoIcon className="h-4 w-4 text-primary flex-shrink-0" />
+          <span className="font-medium text-foreground">{load.cargo}</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm bg-secondary/30 rounded-lg p-2">
+          <Gauge className="h-4 w-4 text-primary flex-shrink-0" />
+          <span className="font-medium text-foreground">{load.weight.toLocaleString()} kg</span>
+        </div>
+        <div className="flex items-center gap-2 text-sm bg-secondary/30 rounded-lg p-2 col-span-2">
+          <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+          <span className="text-muted-foreground">{load.distance} km distance</span>
+          <span className="text-xs text-muted-foreground ml-auto">~{Math.round(load.distance / 100)} hours</span>
+        </div>
       </div>
 
       <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/50 mb-4">
@@ -521,13 +539,14 @@ function LoadCard({
       <div className="flex gap-3">
         <Button
           variant="outline"
-          className="flex-1 h-12 rounded-xl border-border text-muted-foreground bg-transparent"
+          className="flex-1 h-12 sm:h-11 rounded-xl border-2 font-semibold text-muted-foreground bg-transparent hover:bg-secondary"
           onClick={onViewDetails}
         >
           {language === "ny" ? "Zambiri" : "Details"}
         </Button>
-        <Button className="flex-1 h-12 rounded-xl bg-primary text-primary-foreground" onClick={onViewDetails}>
-          {language === "ny" ? "Vomerani" : "Accept"}
+        <Button className="flex-1 h-12 sm:h-11 rounded-xl bg-primary text-primary-foreground font-semibold gap-2" onClick={onViewDetails}>
+          <CheckCircle2 className="h-5 w-5" />
+          <span className="hidden sm:inline">{language === "ny" ? "Vomerani" : "Accept"}</span>
         </Button>
       </div>
     </div>
