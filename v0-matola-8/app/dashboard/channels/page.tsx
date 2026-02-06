@@ -78,3 +78,11 @@ function ChannelsContent() {
     </div>
   )
 }
+
+export default function ChannelsPage() {
+  return (
+    <DashboardShell>
+      <ChannelsContent />
+    </DashboardShell>
+  )
+}
