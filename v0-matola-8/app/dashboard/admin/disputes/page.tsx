@@ -2,8 +2,7 @@
 
 import { useState } from "react"
 import { useApp } from "@/contexts/app-context"
-import { DashboardHeader } from "@/components/dashboard/dashboard-header"
-import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar"
+import { DashboardShell } from "@/components/dashboard/dashboard-shell"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
